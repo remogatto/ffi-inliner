@@ -15,22 +15,22 @@ With ffi-inliner you can write and run C code within your ruby script.
 
 == SYNOPSIS:
 
-require 'ffi-inliner'
+  require 'ffi-inliner'
 
-module MyLib
-  extend Inliner
-  inline <<-c
-    void say_hello(char* name) { printf("Hello, %s\n", name); }
-  c
-end
+  module MyLib
+    extend Inliner
+    inline <<-c
+      void say_hello(char* name) { printf("Hello, %s\n", name); }
+    c
+  end
 
-MyLib.say_hello('boys')
+  MyLib.say_hello('boys')
 
-class Foo
-  include MyLib
-end
+  class Foo
+    include MyLib
+  end
 
-Foo.new.say_hello('foos')
+  Foo.new.say_hello('foos')
 
 For other hints see the examples/ folder.
 
