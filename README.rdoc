@@ -49,6 +49,12 @@ See the wiki
 page[http://wiki.github.com/remogatto/ffi-inliner/Installation] on
 github for more installation hints.
 
+== CREDITS
+
+This software is inspired to
+RubyInline[http://www.zenspider.com/ZSS/Products/RubyInline/] by Ryan
+Davis. Thank you Ryan.
+
 == LICENSE:
 
 (The MIT License)
