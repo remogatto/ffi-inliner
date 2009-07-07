@@ -1,4 +1,4 @@
-ffi-tcc
+ffi-inliner
   by Andrea Fazzi
   http://github.com/remogatto/ffi-inliner
 
