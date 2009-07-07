@@ -8,10 +8,10 @@ With ffi-inliner you can write and run C code within your ruby script.
 
 == FEATURES/PROBLEMS:
 
-* Mix C code in ruby and gulp it on the fly!
+* Mix C snippets in your Ruby code and gulp it on the fly!
 * It works on JRuby too!
 * Fast compilation through tcc[http://bellard.org/tcc/]
-* Not tested in other platforms but linux.
+* Not tested on other platforms except linux.
 
 == SYNOPSIS:
 
