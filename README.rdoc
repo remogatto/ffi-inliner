@@ -1,0 +1,71 @@
+ffi-tcc
+  by Andrea Fazzi
+  http://github.com/remogatto/ffi-inliner
+
+== DESCRIPTION:
+
+With ffi-inliner you can write and run C code within your ruby script.
+
+== FEATURES/PROBLEMS:
+
+* Mix C code in ruby and gulp it on the fly!
+* It works on JRuby too!
+* Fast compilation through tcc[http://bellard.org/tcc/]
+* Not tested in other platforms but linux.
+
+== SYNOPSIS:
+
+require 'ffi-inliner'
+
+module MyLib
+  extend Inliner
+  inline <<-c
+    void say_hello(char* name) { printf("Hello, %s\n", name); }
+  c
+end
+
+MyLib.say_hello('boys')
+
+class Foo
+  include MyLib
+end
+
+Foo.new.say_hello('foos')
+
+For other hints see the examples/ folder.
+
+== REQUIREMENTS:
+
+* ffi >= 0.4.0
+* ffi-tcc >= 0.1.0
+
+== INSTALL:
+
+  git clone git://github.com/remogatto/ffi-inliner
+  cd ffi-inliner
+  sudo rake gem:install
+
+== LICENSE:
+
+(The MIT License)
+
+Copyright (c) 2009 Andrea Fazzi
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
