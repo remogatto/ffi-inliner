@@ -39,7 +39,7 @@ For other hints see the examples/ folder.
 * ffi >= 0.4.0
 * ffi-tcc >= 0.1.0
 
-== INSTALL:
+== DOWNLOAD/INSTALL:
 
   git clone git://github.com/remogatto/ffi-inliner
   cd ffi-inliner
