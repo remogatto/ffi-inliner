@@ -20,7 +20,7 @@ module Inliner
 
   class << self
     def directory
-      @__inliner_directory
+      @@__inliner_directory
     end
   end
 
