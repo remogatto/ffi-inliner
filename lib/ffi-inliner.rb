@@ -1,4 +1,5 @@
 require 'rubygems'
 require 'digest/md5'
+require 'rbconfig'
 require 'ffi'
 require 'ffi-inliner/inliner'

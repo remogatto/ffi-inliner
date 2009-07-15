@@ -24,6 +24,18 @@ module Inliner
     end
   end
 
+  module Platform
+    def self.lib_ext
+      if Config::CONFIG['target_os'] =~ /darwin/
+        '.dylib'
+      elsif Config::CONFIG['target_os'] =~ /mswin|mingw/
+        '.dll'
+      else
+        '.so'
+      end
+    end
+  end
+
   class FilenameManager
     def initialize(mod, function_name, code)
       @mod = mod
@@ -43,7 +55,7 @@ module Inliner
       "#{base_fn}.c"
     end
     def so_fn
-      "#{base_fn}.so"
+      "#{base_fn}.#{Platform.lib_ext}"
     end
     def ffi_fn
       "#{base_fn}.rb"
@@ -68,8 +80,15 @@ module Inliner
   end
 
   class CC < Compiler
+    def ldshared
+      if Config::CONFIG['target_os'] =~ /darwin/
+        'cc -dynamic -bundle'
+      else
+        'cc -shared'
+      end
+    end
     def cmd
-      "cc -shared -o #{@fm.so_fn} #{@fm.c_fn} 2>#{@fm.log_fn}"
+      "#{ldshared} -o #{@fm.so_fn} #{@fm.c_fn} 2>#{@fm.log_fn}"
     end
   end
 
