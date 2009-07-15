@@ -3,9 +3,7 @@ require 'ffi-inliner'
 
 module MyLib
   extend Inliner
-  inline <<-c
-    void say_hello(char* name) { printf("Hello, %s\n", name); }
-  c
+  inline 'void say_hello(char* name) { printf("Hello, %s\n", name); }'
 end
 
 MyLib.say_hello('boys')

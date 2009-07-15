@@ -32,4 +32,7 @@ PROJ.spec.opts << '--color' << '-fs'
 
 depend_on 'ffi', '0.4.0'
 depend_on 'ffi-tcc'
+
+task :default => 'spec'
+
 # EOF

@@ -48,6 +48,29 @@ module Inliner
     def ffi_fn
       "#{base_fn}.rb"
     end
+    def log_fn
+      "#{base_fn}.log"
+    end
+  end
+
+  class Compiler
+    attr_reader :progname
+    def initialize(fm)
+      @fm = fm
+      @progname = cmd.split.first
+    end
+    def exists?
+      system("#{@progname} -v")
+    end
+    def compile
+      raise "Compile error" unless system(cmd)
+    end
+  end
+
+  class CC < Compiler
+    def cmd
+      "cc -shared -o #{@fm.so_fn} #{@fm.c_fn} 2>#{@fm.log_fn}"
+    end
   end
 
   def inline(code)
@@ -56,9 +79,11 @@ module Inliner
     sig = parse_signature(code)
 
     @fm = FilenameManager.new(self, sig['name'], code)
+    @compiler = CC.new(@fm)
 
     unless @fm.cached?
-      compile(code, sig)
+      build(code, sig)
+      @compiler.compile
       instance_eval generate_ffi(sig)
     else
       eval(File.read(@fm.ffi_fn))
@@ -83,6 +108,7 @@ module Inliner
   end
 
   # Based on RubyInline code by Ryan Davis
+  # Copyright (c) 2001-2007 Ryan Davis, Zen Spider Software
   def strip_comments(code)
     # strip c-comments
     src = code.gsub(%r%\s*/\*.*?\*/%m, '')
@@ -93,6 +119,7 @@ module Inliner
   end
 
   # Based on RubyInline code by Ryan Davis
+  # Copyright (c) 2001-2007 Ryan Davis, Zen Spider Software
   def parse_signature(code)
     sig = strip_comments(code)
     # strip preprocessor directives
@@ -160,21 +187,13 @@ module Inliner
     File.open(@fm.ffi_fn, 'w') { |f| f << generate_ffi(sig) }
   end
 
+  def build(code, sig)
+    write_c(code)
+    write_ffi(sig)
+  end
+  
   def compile(code, sig)
-    state = TCC.tcc_new
-
-    TCC.tcc_set_error_func(state, nil, ErrorCallback)
-    TCC.tcc_set_output_type(state, TCC::TCC_OUTPUT_DLL)
-
-    unless TCC.tcc_compile_string(state, code) == -1
-      TCC.tcc_output_file(state, @fm.so_fn)
-      write_c(code)
-      write_ffi(sig)
-    else
-      raise 'Error during compile.'
-    end
-
-    TCC.tcc_delete(state)
+    raise "Compile error" unless system("gcc -shared -o #{@fm.so_fn} #{@fm.c_fn} 2>#{@fm.log_fn}")
   end
 
 end

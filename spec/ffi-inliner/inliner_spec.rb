@@ -83,7 +83,23 @@ describe Inliner do
       module Foo
         inline "int boom() { printf \"Hello\" }"
       end
-    }.should raise_error(/unsupported token/)
+    }.should raise_error(/Compile error/)
+  end
 
+end
+
+describe Inliner::Compiler do
+  before :all do
+    class DummyCC < Inliner::Compiler
+      def cmd
+        "dummycc -shared"
+      end
+    end
+  end
+  it 'should return the progname' do
+    DummyCC.new(nil).progname.should == 'dummycc'
+  end
+  it 'should check if the compiler exists' do
+    DummyCC.new(nil).exists?.should be_false
   end
 end

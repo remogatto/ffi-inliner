@@ -11,6 +11,8 @@ With ffi-inliner you can write and run C code within your ruby script.
 * Mix C snippets in your Ruby code and gulp it on the fly!
 * It works on JRuby too!
 * Fast compilation through tcc[http://bellard.org/tcc/]
+* But it can use the system's compiler on those platforms that don't
+  support tcc (e.g. OSX)
 * Not tested on other platforms except linux.
 
 == SYNOPSIS:
@@ -19,9 +21,7 @@ With ffi-inliner you can write and run C code within your ruby script.
 
   module MyLib
     extend Inliner
-    inline <<-c
-      void say_hello(char* name) { printf("Hello, %s\n", name); }
-    c
+    inline 'void say_hello(char* name) { printf("Hello, %s\n", name); }'
   end
 
   MyLib.say_hello('boys')
@@ -37,7 +37,7 @@ For other hints see the examples/ folder.
 == REQUIREMENTS:
 
 * ffi >= 0.4.0
-* ffi-tcc >= 0.1.0
+* tcc >= 0.9.25 (optional)
 
 == DOWNLOAD/INSTALL:
 
@@ -47,7 +47,7 @@ For other hints see the examples/ folder.
 
 See the wiki
 page[http://wiki.github.com/remogatto/ffi-inliner/Installation] on
-github for more installation hints.
+github for more installation hints about tcc.
 
 == CREDITS
 
