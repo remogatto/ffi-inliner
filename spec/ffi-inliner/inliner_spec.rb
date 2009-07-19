@@ -73,6 +73,36 @@ describe Inliner do
 
   end
 
+  it 'should be configured using the block form' do
+    module Foo
+      inline do |builder|
+        builder.code = "int func_1() { return 0; }"
+      end
+      inline "int func_2() { return 1; }"
+    end
+    Foo.func_1.should == 0
+    Foo.func_2.should == 1
+  end
+
+#   it 'should use different compiler as specified in the configuration block' do
+#     tcc = mock('tcc', :exists? => true, :compile => nil)
+#     Inliner::Compilers::TCC.should_receive(:new).and_return(tcc)
+#     module Foo
+#       inline do |builder|
+#         builder.code = "int func_1() { return 0; }"
+#         builder.compiler = Inliner::Compilers::TCC
+#       end
+#     end
+#   end
+
+#   it 'should be configured using the hash form' do
+#     tcc = mock('tcc', :exists? => true, :compile => nil)
+#     Inliner::Compilers::TCC.should_receive(:new).and_return(tcc)
+#     module Foo
+#       inline "int func_1() { return 1; }", :compiler => Inliner::Compilers::TCC
+#     end
+#   end
+
   it 'should raise errors' do
     lambda {
       module Foo
@@ -88,18 +118,15 @@ describe Inliner do
 
 end
 
-describe Inliner::Compiler do
-  before :all do
-    class DummyCC < Inliner::Compiler
+describe Inliner::Compilers::Compiler do
+  before do
+    class DummyCC < Inliner::Compilers::Compiler
       def cmd
         "dummycc -shared"
       end
     end
   end
   it 'should return the progname' do
-    DummyCC.new(nil).progname.should == 'dummycc'
-  end
-  it 'should check if the compiler exists' do
-    DummyCC.new(nil).exists?.should be_false
+    DummyCC.new.progname.should == 'dummycc'
   end
 end
