@@ -4,6 +4,7 @@
   * Add support for different compiler backends
   * Improve compatibility with Windows and OSX boxes
 * Minor enhancements
+  * Add support for configuration block syntax
   * Remove dependency from ffi-tcc and libtcc
   * Improve compatibility with MRI 1.9.1
   * Cleanup and code refactoring
