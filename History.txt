@@ -5,7 +5,7 @@
   * Improve compatibility with Windows and OSX boxes
 * Minor enhancements
   * Remove dependency from ffi-tcc and libtcc
-  * Improve compatibility with MRI Ruby 1.9.1
+  * Improve compatibility with MRI 1.9.1
   * Cleanup and code refactoring
 
 == 0.1.0 / 2009-07-07
