@@ -24,9 +24,11 @@ describe Inliner do
           return result;
       }
       code
+      inline 'int use_factorial() { return factorial(4) / 2; }'
     end
 
     Foo.factorial(4).should == 24
+    Foo.use_factorial.should == 12
   end
 
   it 'should correctly parse function signature' do
@@ -76,9 +78,19 @@ describe Inliner do
   it 'should be configured using the block form' do
     module Foo
       inline do |builder|
-        builder.code = "int func_1() { return 0; }"
+        builder.c %q{
+          int func_1() 
+          { 
+            return 0; 
+          };
+        }
+        builder.c %q{
+          int func_2()
+          { 
+            return 1; 
+          };
+        }
       end
-      inline "int func_2() { return 1; }"
     end
     Foo.func_1.should == 0
     Foo.func_2.should == 1

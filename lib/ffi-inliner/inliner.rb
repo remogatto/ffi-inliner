@@ -104,13 +104,21 @@ module Inliner
   end
 
   class Builder
-    attr_accessor :code, :compiler
-
     def initialize(mod, code = "", options = {})
       @mod = mod
       @code = code
       options = { :compiler => Compilers::GCC }.merge(options)
       @compiler = options[:compiler]
+    end
+
+    def c(code)
+      @code << code 
+      p @code
+      @code
+    end
+
+    def use_compiler(compiler)
+      @compiler = compiler
     end
 
     def build
