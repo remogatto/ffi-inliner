@@ -19,7 +19,7 @@ PROJ.name = 'ffi-inliner'
 PROJ.authors = 'Andrea Fazzi'
 PROJ.email = 'andrea.fazzi@alcacoop.it'
 PROJ.url = 'http://github.com/remogatto/ffi-inliner'
-PROJ.version = '0.2.0'
+PROJ.version = '0.2.1'
 
 PROJ.readme_file = 'README.rdoc'
 
