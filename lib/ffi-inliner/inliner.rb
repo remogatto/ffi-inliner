@@ -35,9 +35,8 @@ module Inliner
   end
 
   class FilenameManager
-    def initialize(mod, function_name, code)
+    def initialize(mod, code)
       @mod = mod.name.gsub('::', '__')
-      @function_name = function_name
       @code = code
     end
     def cached?
@@ -47,7 +46,7 @@ module Inliner
       File.exists?(c_fn)
     end
     def base_fn
-      File.join(Inliner.directory, "#{@mod}_#{@function_name}_#{(Digest::MD5.new << @code).to_s[0, 4]}")      
+      File.join(Inliner.directory, "#{@mod}_#{(Digest::MD5.new << @code).to_s[0, 4]}")      
     end
     %w(c rb log).each do |ext|
       define_method("#{ext}_fn") { "#{base_fn}.#{ext}" }
@@ -104,17 +103,27 @@ module Inliner
   end
 
   class Builder
+    attr_reader :code
     def initialize(mod, code = "", options = {})
+      make_pointer_types
       @mod = mod
       @code = code
+      @sig = [parse_signature(@code)] unless @code.empty?
       options = { :compiler => Compilers::GCC }.merge(options)
       @compiler = options[:compiler]
     end
 
+    def map(type_map)
+      @types.merge!(type_map)
+    end
+    
     def c(code)
+      (@sig ||= []) << parse_signature(code)
       @code << code 
-      p @code
-      @code
+    end
+
+    def c_raw(code)
+      @code << code
     end
 
     def use_compiler(compiler)
@@ -122,15 +131,12 @@ module Inliner
     end
 
     def build
-      make_pointer_types
-      sig = parse_signature(@code)
-      @fm = FilenameManager.new(@mod, sig['name'], @code)
-      @compiler =  @compiler.check_and_create(@fm)
-
+      @fm = FilenameManager.new(@mod, @code)
+      @compiler = @compiler.check_and_create(@fm)
       unless @fm.cached?
-        write_files(@code, sig)
+        write_files(@code, @sig)
         @compiler.compile
-        @mod.instance_eval generate_ffi(sig)
+        @mod.instance_eval generate_ffi(@sig)
       else
         @mod.instance_eval(File.read(@fm.rb_fn))
       end
@@ -209,14 +215,17 @@ module Inliner
     end
     
     def generate_ffi(sig)
-      args = sig['args'].map { |arg| ":#{to_ffi_type(arg)}" }.join(',')
-      <<FFI
- extend FFI::Library
- ffi_lib '#{@fm.so_fn}'
- attach_function '#{sig['name']}', [#{args}], :#{to_ffi_type(sig['return'])}
-FFI
-    end
+      ffi_code = <<PREAMBLE
+extend FFI::Library
+ffi_lib '#{@fm.so_fn}'
 
+PREAMBLE
+      sig.each do |s|
+        args = s['args'].map { |arg| ":#{to_ffi_type(arg)}" }.join(',')
+        ffi_code << "attach_function '#{s['name']}', [#{args}], :#{to_ffi_type(s['return'])}\n"
+      end
+      ffi_code
+    end
     def write_c(code)
       File.open(@fm.c_fn, 'w') { |f| f << code }
     end

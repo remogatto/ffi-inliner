@@ -75,7 +75,7 @@ describe Inliner do
 
   end
 
-  it 'should be configured using the block form' do
+   it 'should be configured using the block form' do
     module Foo
       inline do |builder|
         builder.c %q{
@@ -95,7 +95,49 @@ describe Inliner do
     Foo.func_1.should == 0
     Foo.func_2.should == 1
   end
+  
+  it 'should allow users to add type maps' do
+    class MyStruct < FFI::Struct
+      layout :dummy, :int
+    end
+    module Foo
+      inline do |builder|
+        builder.map 'my_struct_t *' => 'pointer'
+        builder.c_raw %q{
+          typedef struct {
+            int dummy;
+          } my_struct_t;
+        }
+        builder.c 'my_struct_t* use_my_struct(my_struct_t *my_struct) { return my_struct; }'
+      end
+    end
+    my_struct = MyStruct.new
+    Foo.use_my_struct(my_struct).should == my_struct.to_ptr
+  end
+  it 'should generate C struct from FFI::Struct' do
+    pending do
+      class MyStruct < FFI::Struct
+        layout :a, :int, \
+        :b, :char, 
+        :c, :pointer
+      end
+      module Foo
+        extend Inliner
+        inline do |builder|
+          builder.struct MyStruct
+          builder.code.should == <<EOC
+typedef struct
+{
+int a;
+char b;
+void* c;
+} my_struct_t;
 
+EOC
+        end
+      end
+    end
+  end
 #   it 'should use different compiler as specified in the configuration block' do
 #     tcc = mock('tcc', :exists? => true, :compile => nil)
 #     Inliner::Compilers::TCC.should_receive(:new).and_return(tcc)
@@ -127,7 +169,7 @@ describe Inliner do
       end
     }.should raise_error(/Compile error/)
   end
-
+  
 end
 
 describe Inliner::Compilers::Compiler do
