@@ -30,6 +30,8 @@ PROJ.ann.email[:server] = 'smtp.gmail.com'
 
 PROJ.spec.opts << '--color' << '-fs'
 
+PROJ.ruby_opts = []
+
 depend_on 'ffi', '0.3.5'
 
 task :default => 'spec'

@@ -24,11 +24,11 @@ describe Inliner do
           return result;
       }
       code
-      inline 'int use_factorial() { return factorial(4) / 2; }'
+      inline 'int simple_math() { return 1 + 1; }'
     end
 
     Foo.factorial(4).should == 24
-    Foo.use_factorial.should == 12
+    Foo.simple_math.should == 2
   end
 
   it 'should correctly parse function signature' do

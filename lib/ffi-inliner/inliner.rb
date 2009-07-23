@@ -82,9 +82,9 @@ module Inliner
       end
       def ldshared
         if Config::CONFIG['target_os'] =~ /darwin/
-          'gcc -dynamic -bundle'
+          'gcc -dynamic -bundle -fPIC'
         else
-          'gcc -shared'
+          'gcc -shared -fPIC'
         end
       end
       def cmd
