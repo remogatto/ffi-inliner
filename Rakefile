@@ -2,6 +2,9 @@
 # configured in this Rakefile. The .rake files in the tasks directory
 # are where the options are used.
 
+$:.unshift(File.expand_path(File.join(File.dirname(__FILE__), 'lib')))
+require 'ffi-inliner/version'
+
 begin
   require 'bones'
   Bones.setup
@@ -19,9 +22,11 @@ PROJ.name = 'ffi-inliner'
 PROJ.authors = 'Andrea Fazzi'
 PROJ.email = 'andrea.fazzi@alcacoop.it'
 PROJ.url = 'http://github.com/remogatto/ffi-inliner'
-PROJ.version = '0.2.1'
+PROJ.version = Inliner::VERSION
 
 PROJ.readme_file = 'README.rdoc'
+
+PROJ.rubyforge.name = 'ffi'
 
 PROJ.ann.paragraphs << 'FEATURES' << 'SYNOPSIS' << 'REQUIREMENTS' << 'DOWNLOAD/INSTALL' << 'CREDITS'
 PROJ.ann.email[:from] = 'andrea.fazzi@alcacoop.it'
