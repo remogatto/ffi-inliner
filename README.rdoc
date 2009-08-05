@@ -43,13 +43,15 @@ wiki[http://wiki.github.com/remogatto/ffi-inliner/tutorial]
 
 == DOWNLOAD/INSTALL:
 
+From rubyforge:
+
+  [sudo] gem install ffi-inliner
+
+or from github:
+
   git clone git://github.com/remogatto/ffi-inliner
   cd ffi-inliner
   sudo rake gem:install
-
-See the wiki
-page[http://wiki.github.com/remogatto/ffi-inliner/Installation] on
-github for more installation hints about tcc.
 
 == CREDITS
 
