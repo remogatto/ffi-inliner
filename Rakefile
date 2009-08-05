@@ -37,7 +37,7 @@ PROJ.spec.opts << '--color' << '-fs'
 
 PROJ.ruby_opts = []
 
-depend_on 'ffi', '0.3.5'
+depend_on 'ffi', '>=0.4.0'
 
 task :default => 'spec'
 
