@@ -1,3 +1,8 @@
+== 0.2.2 / 2009-08-05
+
+* Bug fix
+  * Fix ffi gem version dependency issue
+
 == 0.2.1 / 2009-08-05
 
 * Bug fix
