@@ -127,7 +127,7 @@ describe Inliner do
   end
 
   it 'should generate C struct from FFI::Struct' do
-    pending do
+    pending do 
       class MyStruct < FFI::Struct
         layout :a, :int, \
         :b, :char, 

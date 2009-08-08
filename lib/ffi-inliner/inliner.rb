@@ -130,8 +130,16 @@ module Inliner
       @code << code
     end
 
-    def use_compiler(compiler)
+    def compiler(compiler)
       @compiler = compiler
+    end
+
+    def struct(ffi_struct)
+#       @code << "typedef struct {"
+#       ffi_struct.fields.map do |name, type|
+#         @code << "#{to_ffi(type)} #{name};\n"
+#       end
+#       @code << "} #{ffi_struct.class.name}"
     end
 
     def build
