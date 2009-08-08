@@ -1,3 +1,8 @@
+== 0.3.3 / 
+
+* Minor enhancements
+  * Add Builder#include method to include library and user header files
+
 == 0.2.2 / 2009-08-05
 
 * Bug fix
