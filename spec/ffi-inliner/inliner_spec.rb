@@ -114,6 +114,18 @@ describe Inliner do
     my_struct = MyStruct.new
     Foo.use_my_struct(my_struct).should == my_struct.to_ptr
   end
+
+  it 'should allow users to include header files' do
+    module Foo
+      inline do |builder|
+        builder.include "stdio.h"
+        builder.include "local_header.h", :quoted => true
+        builder.code.should == "#include <stdio.h>\n#include \"local_header.h\"\n"
+        builder.stub!(:build)
+      end
+    end
+  end
+
   it 'should generate C struct from FFI::Struct' do
     pending do
       class MyStruct < FFI::Struct

@@ -117,6 +117,10 @@ module Inliner
       @types.merge!(type_map)
     end
     
+    def include(fn, options = {})
+      options[:quoted] ? @code << "#include \"#{fn}\"\n" : @code << "#include <#{fn}>\n"
+    end
+
     def c(code)
       (@sig ||= []) << parse_signature(code)
       @code << code 
@@ -215,15 +219,20 @@ module Inliner
     end
     
     def generate_ffi(sig)
+
       ffi_code = <<PREAMBLE
 extend FFI::Library
 ffi_lib '#{@fm.so_fn}'
 
 PREAMBLE
-      sig.each do |s|
-        args = s['args'].map { |arg| ":#{to_ffi_type(arg)}" }.join(',')
-        ffi_code << "attach_function '#{s['name']}', [#{args}], :#{to_ffi_type(s['return'])}\n"
+
+      unless sig.nil?
+        sig.each do |s|
+          args = s['args'].map { |arg| ":#{to_ffi_type(arg)}" }.join(',')
+          ffi_code << "attach_function '#{s['name']}', [#{args}], :#{to_ffi_type(s['return'])}\n"
+        end
       end
+
       ffi_code
     end
     def write_c(code)
