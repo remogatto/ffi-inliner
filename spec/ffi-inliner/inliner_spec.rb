@@ -126,8 +126,17 @@ describe Inliner do
     end
   end
 
+  it 'should allow users to add libraries' do
+    module Foo
+      inline do |builder|
+        builder.library 'foolib1', 'foolib2'
+        builder.stub!(:build)
+      end
+    end
+  end
+
   it 'should generate C struct from FFI::Struct' do
-    pending do 
+    pending do
       class MyStruct < FFI::Struct
         layout :a, :int, \
         :b, :char, 

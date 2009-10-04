@@ -59,7 +59,7 @@ module Inliner
   module Compilers
     class Compiler
       attr_reader :progname
-      def self.check_and_create(fm = nil)
+      def self.check_and_create(fm = nil, libraries = nil)
         compiler = new(fm) 
         unless compiler.exists?
           raise "Can't find compiler #{compiler.class}"
@@ -67,12 +67,17 @@ module Inliner
           compiler
         end
       end
-      def initialize(fm = nil)
+      def initialize(fm = nil, libraries = nil)
         @fm = fm
+        @libraries = libraries
         @progname = cmd.split.first
       end
       def compile
         raise "Compile error! See #{@fm.log_fn}" unless system(cmd)
+      end
+      private
+      def libs
+        @libraries.inject("") { |str, lib| str << "-l#{lib} " } if @libraries
       end
     end
 
@@ -88,7 +93,17 @@ module Inliner
         end
       end
       def cmd
-        "#{ldshared} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
+        "#{ldshared} #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
+      end
+    end
+
+    class CPlusPlus < GCC
+      def ldshared
+        if Config::CONFIG['target_os'] =~ /darwin/
+          'g++ -dynamic -bundle -fPIC'
+        else
+          'g++ -shared -fPIC'
+        end
       end
     end
 
@@ -97,7 +112,7 @@ module Inliner
         IO.popen("#{@progname}") { |f| f.gets } ? true : false
       end
       def cmd
-        "tcc -shared -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
+        "tcc -shared #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
       end
     end
   end
@@ -121,6 +136,10 @@ module Inliner
       options[:quoted] ? @code << "#include \"#{fn}\"\n" : @code << "#include <#{fn}>\n"
     end
 
+    def library(*libraries)
+      (@libraries ||= []).concat(libraries)
+    end
+
     def c(code)
       (@sig ||= []) << parse_signature(code)
       @code << code 
@@ -135,16 +154,16 @@ module Inliner
     end
 
     def struct(ffi_struct)
-#       @code << "typedef struct {"
-#       ffi_struct.fields.map do |name, type|
-#         @code << "#{to_ffi(type)} #{name};\n"
-#       end
-#       @code << "} #{ffi_struct.class.name}"
+      @code << "typedef struct {"
+      ffi_struct.layout.fields.each do |field|
+        @code << "#{field} #{field.name};\n"
+      end
+      @code << "} #{ffi_struct.class.name}"
     end
 
     def build
       @fm = FilenameManager.new(@mod, @code)
-      @compiler = @compiler.check_and_create(@fm)
+      @compiler = @compiler.check_and_create(@fm, @libraries)
       unless @fm.cached?
         write_files(@code, @sig)
         @compiler.compile

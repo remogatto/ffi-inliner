@@ -34,10 +34,9 @@ With ffi-inliner you can run C code within your ruby script.
   Foo.new.say_hello('foos')
 
 For other hints see the examples/ folder or visit the
-{wiki}[http://wiki.github.com/remogatto/ffi-inliner/tutorial].
-
-For a "real" world example you may be interested to
-{ffi-life}[http://github.com/remogatto/ffi-life]
+wiki[http://wiki.github.com/remogatto/ffi-inliner/tutorial]. For a
+"real" world example you may be interested to
+ffi-life[http://github.com/remogatto/ffi-life].
 
 == REQUIREMENTS:
 
