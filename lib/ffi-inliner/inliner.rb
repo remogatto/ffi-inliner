@@ -60,7 +60,7 @@ module Inliner
     class Compiler
       attr_reader :progname
       def self.check_and_create(fm = nil, libraries = nil)
-        compiler = new(fm) 
+        compiler = new(fm, libraries) 
         unless compiler.exists?
           raise "Can't find compiler #{compiler.class}"
         else
