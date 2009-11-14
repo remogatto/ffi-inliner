@@ -112,7 +112,11 @@ module Inliner
         IO.popen("#{@progname}") { |f| f.gets } ? true : false
       end
       def cmd
-        "tcc -shared #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
+        if Config::CONFIG['target_os'] =~ /mswin|mingw/
+          "tcc -rdynamic -shared #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
+        else
+          "tcc -shared #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
+        end
       end
     end
   end

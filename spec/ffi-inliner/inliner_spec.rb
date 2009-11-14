@@ -159,16 +159,15 @@ EOC
       end
     end
   end
-#   it 'should use different compiler as specified in the configuration block' do
-#     tcc = mock('tcc', :exists? => true, :compile => nil)
-#     Inliner::Compilers::TCC.should_receive(:new).and_return(tcc)
-#     module Foo
-#       inline do |builder|
-#         builder.code = "int func_1() { return 0; }"
-#         builder.compiler = Inliner::Compilers::TCC
-#       end
-#     end
-#   end
+  it 'should use different compiler as specified in the configuration block' do
+    module Foo
+      inline do |builder|
+        builder.compiler Inliner::Compilers::TCC
+        builder.c "int func_1() { return 1 + 1; }"
+      end
+    end
+    Foo.func_1.should == 2
+  end
 
 #   it 'should be configured using the hash form' do
 #     tcc = mock('tcc', :exists? => true, :compile => nil)
