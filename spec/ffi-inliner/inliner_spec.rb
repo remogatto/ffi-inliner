@@ -213,8 +213,9 @@ EOC
   end
 
   describe 'GPlusPlus compiler' do
-
+    
     it 'should compile and link a C shim library that encapsulates C++ code' do
+
       module Foo
         inline do |builder|
           builder.use_compiler Inliner::Compilers::GPlusPlus
@@ -231,19 +232,21 @@ EOC
               string Greeter::say_hello() {
                 return "Hello foos!";
               };
-            code
-            builder.c <<-code
+              code
+              builder.map 'char *' => 'string'
+              builder.c <<-code
               const char* say_hello()
               { 
                 Greeter greeter;
                 return greeter.say_hello().c_str();
               }
             code
-          end
         end
       end
-
+      Foo.say_hello.should == 'Hello foos!'
     end
-  
+
+  end
+
 end
 
