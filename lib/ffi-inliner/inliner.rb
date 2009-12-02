@@ -97,7 +97,7 @@ module Inliner
       end
     end
 
-    class CPlusPlus < GCC
+    class GPlusPlus < GCC
       def ldshared
         if Config::CONFIG['target_os'] =~ /darwin/
           'g++ -dynamic -bundle -fPIC'
@@ -122,14 +122,14 @@ module Inliner
   end
 
   class Builder
-    attr_reader :code
+    attr_reader :code, :compiler
     def initialize(mod, code = "", options = {})
       make_pointer_types
       @mod = mod
       @code = code
       @sig = [parse_signature(@code)] unless @code.empty?
-      options = { :compiler => Compilers::GCC }.merge(options)
-      @compiler = options[:compiler]
+      options = { :use_compiler => Compilers::GCC }.merge(options)
+      @compiler = options[:use_compiler]
     end
 
     def map(type_map)
@@ -146,14 +146,14 @@ module Inliner
 
     def c(code)
       (@sig ||= []) << parse_signature(code)
-      @code << code 
+      @code << (@compiler == Compilers::GPlusPlus ? "extern \"C\" {\n#{code}\n}" : code )
     end
 
     def c_raw(code)
       @code << code
     end
 
-    def compiler(compiler)
+    def use_compiler(compiler)
       @compiler = compiler
     end
 
@@ -208,14 +208,16 @@ module Inliner
     # Based on RubyInline code by Ryan Davis
     # Copyright (c) 2001-2007 Ryan Davis, Zen Spider Software
     def parse_signature(code)
+
       sig = strip_comments(code)
+
       # strip preprocessor directives
       sig.gsub!(/^\s*\#.*(\\\n.*)*/, '')
       # strip {}s
       sig.gsub!(/\{[^\}]*\}/, '{ }')
       # clean and collapse whitespace
       sig.gsub!(/\s+/, ' ')
-      
+
       # types = 'void|int|char|char\s\*|void\s\*'
       types = @types.keys.map{|x| Regexp.escape(x)}.join('|')
       sig = sig.gsub(/\s*\*\s*/, ' * ').strip

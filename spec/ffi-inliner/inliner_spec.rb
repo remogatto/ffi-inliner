@@ -1,6 +1,6 @@
 require File.expand_path(File.join(File.dirname(__FILE__), "../spec_helper"))
 
-describe Inliner do
+describe 'Inliner' do
 
   before do
     module Foo
@@ -75,7 +75,7 @@ describe Inliner do
 
   end
 
-   it 'should be configured using the block form' do
+  it 'should be configured using the block form' do
     module Foo
       inline do |builder|
         builder.c %q{
@@ -159,23 +159,32 @@ EOC
       end
     end
   end
+
   it 'should use different compiler as specified in the configuration block' do
     module Foo
       inline do |builder|
-        builder.compiler Inliner::Compilers::TCC
+        builder.use_compiler Inliner::Compilers::TCC
         builder.c "int func_1() { return 1 + 1; }"
       end
     end
     Foo.func_1.should == 2
   end
 
-#   it 'should be configured using the hash form' do
-#     tcc = mock('tcc', :exists? => true, :compile => nil)
-#     Inliner::Compilers::TCC.should_receive(:new).and_return(tcc)
-#     module Foo
-#       inline "int func_1() { return 1; }", :compiler => Inliner::Compilers::TCC
-#     end
-#   end
+  it 'should return the current compiler' do
+    module Foo
+      inline do |builder|
+        builder.compiler.should == Inliner::Compilers::GCC
+      end
+    end
+  end
+
+  #   it 'should be configured using the hash form' do
+  #     tcc = mock('tcc', :exists? => true, :compile => nil)
+  #     Inliner::Compilers::TCC.should_receive(:new).and_return(tcc)
+  #     module Foo
+  #       inline "int func_1() { return 1; }", :compiler => Inliner::Compilers::TCC
+  #     end
+  #   end
 
   it 'should raise errors' do
     lambda {
@@ -189,18 +198,52 @@ EOC
       end
     }.should raise_error(/Compile error/)
   end
+
+  describe 'Compiler' do
+    before do
+      class DummyCC < Inliner::Compilers::Compiler
+        def cmd
+          "dummycc -shared"
+        end
+      end
+    end
+    it 'should return the progname' do
+      DummyCC.new.progname.should == 'dummycc'
+    end
+  end
+
+  describe 'GPlusPlus compiler' do
+
+    it 'should compile and link a C shim library that encapsulates C++ code' do
+      module Foo
+        inline do |builder|
+          builder.use_compiler Inliner::Compilers::GPlusPlus
+          builder.c_raw <<-code
+            #include <iostream>
+            #include <string>
+            using namespace std;
+            class Greeter  {
+                public:
+                Greeter();
+                string say_hello();
+              };
+              Greeter::Greeter() { };
+              string Greeter::say_hello() {
+                return "Hello foos!";
+              };
+            code
+            builder.c <<-code
+              const char* say_hello()
+              { 
+                Greeter greeter;
+                return greeter.say_hello().c_str();
+              }
+            code
+          end
+        end
+      end
+
+    end
   
 end
 
-describe Inliner::Compilers::Compiler do
-  before do
-    class DummyCC < Inliner::Compilers::Compiler
-      def cmd
-        "dummycc -shared"
-      end
-    end
-  end
-  it 'should return the progname' do
-    DummyCC.new.progname.should == 'dummycc'
-  end
-end
