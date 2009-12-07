@@ -1,11 +1,17 @@
-== 0.2.3 / 
+== 0.2.3 / 2009-12-07
 
 * Minor enhancements
   * Add Builder#include method to include library and user header files
   * Add Builder#library method to link with custom libraries
-  * Add CPlusPlus compiler (BTW you need to use extern "C" linkage to
-    bind to C++ code)
-
+  * Add experimental support for wrapping C++ through C. When using 
+    GPlusPlus compiler, the inliner will automatically wraps C code 
+    inside an extern "C" block.
+* Bug fix
+  * Fix Issue#2: TCC generated shared libraries do not work in Windows 
+(thanks to Luis Lavena)
+* Changes in the API
+  * Rename #compiler in #use_compiler
+  * Now #compiler returns the current compiler
 == 0.2.2 / 2009-08-05
 
 * Bug fix
