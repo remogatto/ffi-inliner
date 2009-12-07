@@ -8,10 +8,11 @@
     inside an extern "C" block.
 * Bug fix
   * Fix Issue#2: TCC generated shared libraries do not work in Windows 
-(thanks to Luis Lavena)
+    (thanks to Luis Lavena)
 * Changes in the API
   * Rename #compiler in #use_compiler
   * Now #compiler returns the current compiler
+
 == 0.2.2 / 2009-08-05
 
 * Bug fix

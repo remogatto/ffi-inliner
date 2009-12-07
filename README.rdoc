@@ -14,7 +14,7 @@ With ffi-inliner you can run C code within your ruby script.
 * Yep, it means that you can run it on JRuby too!
 * Fast compilation through tcc[http://bellard.org/tcc/]
 * But it can use the system's compiler (e.g. gcc) on those platforms
-  that don't support tcc (e.g. OSX)
+  that don't support tcc (e.g. OSX) or that don't have it installed
 
 == SYNOPSIS:
 
