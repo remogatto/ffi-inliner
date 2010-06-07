@@ -130,6 +130,7 @@ module Inliner
       @sig = [parse_signature(@code)] unless @code.empty?
       options = { :use_compiler => Compilers::GCC }.merge(options)
       @compiler = options[:use_compiler]
+      @libraries = []
     end
 
     def map(type_map)
