@@ -1,3 +1,9 @@
+== 0.2.4 / 2010-06-09
+
+* Bug fix
+  * Fix Issue #3: Added missing 'require' for FileUtils
+  * Fix Issue #5: instance variable @libraries not initialized warning
+
 == 0.2.3 / 2009-12-07
 
 * Minor enhancements
