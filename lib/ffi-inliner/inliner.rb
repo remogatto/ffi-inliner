@@ -35,9 +35,10 @@ module Inliner
   end
 
   class FilenameManager
-    def initialize(mod, code)
+    def initialize(mod, code, libraries)
       @mod = mod.name.gsub(/[:#<>\/]/, '_')
       @code = code
+      @libraries = libraries
     end
     def cached?
       exists?
@@ -46,7 +47,7 @@ module Inliner
       File.exists?(c_fn)
     end
     def base_fn
-      File.join(Inliner.directory, "#{@mod}_#{(Digest::MD5.new << @code).to_s[0, 4]}")      
+      File.join(Inliner.directory, "#{@mod}_#{(Digest::MD5.new << @code << @libraries.to_s).to_s[0, 4]}")      
     end
     %w(c rb log).each do |ext|
       define_method("#{ext}_fn") { "#{base_fn}.#{ext}" }
@@ -73,6 +74,7 @@ module Inliner
         @progname = cmd.split.first
       end
       def compile
+        puts 'running:' + cmd if $VERBOSE
         raise "Compile error! See #{@fm.log_fn}" unless system(cmd)
       end
       private
@@ -173,7 +175,7 @@ module Inliner
     end
 
     def build
-      @fm = FilenameManager.new(@mod, @code)
+      @fm = FilenameManager.new(@mod, @code, @libraries)
       @compiler = @compiler.check_and_create(@fm, @libraries)
       unless @fm.cached?
         write_files(@code, @sig)
