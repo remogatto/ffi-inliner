@@ -160,15 +160,17 @@ EOC
     end
   end
 
-  it 'should use different compiler as specified in the configuration block' do
-    module Foo
-      inline do |builder|
-        builder.use_compiler Inliner::Compilers::TCC
-        builder.c "int func_1() { return 1 + 1; }"
-      end
-    end
-    Foo.func_1.should == 2
-  end
+  # FIXME: Eventually, find a better way to spec this
+  #
+  # it 'should use different compiler as specified in the configuration block' do
+  #   module Foo
+  #     inline do |builder|
+  #       builder.use_compiler Inliner::Compilers::TCC
+  #       builder.c "int func_1() { return 1 + 1; }"
+  #     end
+  #   end
+  #   Foo.func_1.should == 2
+  # end
 
   it 'should return the current compiler' do
     module Foo
