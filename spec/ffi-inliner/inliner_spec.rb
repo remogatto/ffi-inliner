@@ -134,6 +134,33 @@ describe 'Inliner' do
       end
     end
   end
+  
+  if  Config::CONFIG['target_os'] =~ /mswin|mingw/
+    it "should put library links at the end in mingw" do
+      module Foo
+
+        code = <<-CODE
+        #include <windows.h>
+            #include <mmsystem.h>
+            int go() {
+              mixerOpen(0, 0,0,0,0);
+              return 3;
+            }
+        CODE
+      
+        inline do |builder|
+          builder.library 'Winmm'
+          builder.c_raw code
+        end
+        inline do |builder|
+          builder.use_compiler Inliner::Compilers::GPlusPlus
+          builder.library 'Winmm'
+          builder.c_raw code
+        end
+      end
+      
+    end
+  end
 
   it 'should generate C struct from FFI::Struct' do
     pending do

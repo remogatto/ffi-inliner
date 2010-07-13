@@ -1,5 +1,4 @@
 module Inliner
-
   DEV_NULL = if Config::CONFIG['target_os'] =~ /mswin|mingw/
                'nul'
              else
@@ -71,7 +70,8 @@ module Inliner
       def initialize(fm = nil, libraries = nil)
         @fm = fm
         @libraries = libraries
-        @progname = cmd.split.first
+        # ignore sh -c '
+        @progname = cmd.split.reject{|part| ["'", "sh", "-c"].include? part}[0]
       end
       def compile
         puts 'running:' + cmd if $VERBOSE
@@ -87,6 +87,7 @@ module Inliner
       def exists?
         IO.popen("#{@progname} 2>&1") { |f| f.gets } ? true : false
       end
+      
       def ldshared
         if Config::CONFIG['target_os'] =~ /darwin/
           'gcc -dynamic -bundle -fPIC'
@@ -94,22 +95,22 @@ module Inliner
           'gcc -shared -fPIC'
         end
       end
+      
       def cmd
-        "#{ldshared} #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
+        if Config::CONFIG['target_os'] =~ /mswin|mingw/
+          "sh -c ' #{ldshared} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{libs}' 2>\"#{@fm.log_fn}\""
+        else
+          "#{ldshared} #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{after_libs} 2>\"#{@fm.log_fn}\""
+        end
       end
     end
 
     class GPlusPlus < GCC
+      
       def ldshared
         if Config::CONFIG['target_os'] =~ /darwin/
           'g++ -dynamic -bundle -fPIC'
-        elsif ENV['OS'] == 'Windows_NT'
-          # windows requires use of sh first
-          def cmd
-            "sh -c 'g++ -shared -fPIC #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\"' 2>\"#{@fm.log_fn}\""
-          end        
         else
-          # Linux
           'g++ -shared -fPIC'
         end
       end
@@ -196,6 +197,8 @@ module Inliner
     end
 
     def cached?(name, code)
+      require 'ruby-debug'
+      debugger
       File.exists?(cname(name, code))
     end
 
