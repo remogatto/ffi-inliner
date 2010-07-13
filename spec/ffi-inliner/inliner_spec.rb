@@ -75,6 +75,27 @@ describe 'Inliner' do
 
   end
 
+  it 'should recompile  if the code is changed after a failure' do
+    # unfortunately this doesn't check the real functionality, which is that if a dll is deleted, it isn't re-produced
+    begin
+      module Foo
+        inline "int updated_func2() { asdf }"
+      end
+    rescue
+      begin
+        Foo.updated_func2
+        raise 'should have failed'
+      rescue NoMethodError
+      end
+    end
+    
+    module Foo
+      inline "int updated_func2() { return 2 + 2; }"
+    end
+    
+    Foo.updated_func2.should == 4
+  end
+
   it 'should be configured using the block form' do
     module Foo
       inline do |builder|

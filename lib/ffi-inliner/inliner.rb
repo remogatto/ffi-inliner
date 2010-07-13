@@ -40,7 +40,7 @@ module Inliner
       @libraries = libraries
     end
     def cached?
-      exists?
+      File.exists?(so_fn)
     end
     def exists?
       File.exists?(c_fn)
