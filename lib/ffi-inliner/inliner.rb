@@ -36,7 +36,7 @@ module Inliner
 
   class FilenameManager
     def initialize(mod, code)
-      @mod = mod.name.gsub('::', '__')
+      @mod = mod.name.gsub(/[:#<>\/]/, '_')
       @code = code
     end
     def cached?
