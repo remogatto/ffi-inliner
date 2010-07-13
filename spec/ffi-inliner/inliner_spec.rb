@@ -215,7 +215,6 @@ EOC
   describe 'GPlusPlus compiler' do
     
     it 'should compile and link a shim C library that encapsulates C++ code' do
-
       module Foo
         inline do |builder|
           builder.use_compiler Inliner::Compilers::GPlusPlus

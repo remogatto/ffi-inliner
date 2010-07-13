@@ -101,7 +101,13 @@ module Inliner
       def ldshared
         if Config::CONFIG['target_os'] =~ /darwin/
           'g++ -dynamic -bundle -fPIC'
+        elsif ENV['OS'] == 'Windows_NT'
+          # windows requires use of sh first
+          def cmd
+            "sh -c 'g++ -shared -fPIC #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\"' 2>\"#{@fm.log_fn}\""
+          end        
         else
+          # Linux
           'g++ -shared -fPIC'
         end
       end
