@@ -40,7 +40,7 @@ module Inliner
       @libraries = libraries
     end
     def cached?
-      File.exists?(so_fn)
+      exists?
     end
     def exists?
       File.exists?(c_fn)
@@ -100,7 +100,7 @@ module Inliner
         if Config::CONFIG['target_os'] =~ /mswin|mingw/
           "sh -c ' #{ldshared} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{libs}' 2>\"#{@fm.log_fn}\""
         else
-          "#{ldshared} #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{after_libs} 2>\"#{@fm.log_fn}\""
+          "#{ldshared} #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{libs} 2>\"#{@fm.log_fn}\""
         end
       end
     end
