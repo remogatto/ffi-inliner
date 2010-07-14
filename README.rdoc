@@ -57,9 +57,12 @@ or from github:
 
 == CREDITS
 
-This software is inspired to
-RubyInline[http://www.zenspider.com/ZSS/Products/RubyInline/] by Ryan
-Davis. Thank you Ryan.
+Special thanks to:
+
+* Ryan Davis for its inspiring
+  RubyInline[http://www.zenspider.com/ZSS/Products/RubyInline/].
+
+* Roger Pack for improving support for Windows platforms.
 
 == LICENSE:
 
