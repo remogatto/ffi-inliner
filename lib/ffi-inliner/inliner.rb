@@ -196,12 +196,6 @@ module Inliner
       end    
     end
 
-    def cached?(name, code)
-      require 'ruby-debug'
-      debugger
-      File.exists?(cname(name, code))
-    end
-
     def to_ffi_type(c_type)
       @types[c_type]
     end
