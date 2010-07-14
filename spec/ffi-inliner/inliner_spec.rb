@@ -75,6 +75,27 @@ describe 'Inliner' do
 
   end
 
+  it 'should recompile  if the code is changed after a failure' do
+    # unfortunately this doesn't check the real functionality, which is that if a dll is deleted, it isn't re-produced
+    begin
+      module Foo
+        inline "int updated_func2() { asdf }"
+      end
+    rescue
+      begin
+        Foo.updated_func2
+        raise 'should have failed'
+      rescue NoMethodError
+      end
+    end
+    
+    module Foo
+      inline "int updated_func2() { return 2 + 2; }"
+    end
+    
+    Foo.updated_func2.should == 4
+  end
+
   it 'should be configured using the block form' do
     module Foo
       inline do |builder|
@@ -132,6 +153,33 @@ describe 'Inliner' do
         builder.library 'foolib1', 'foolib2'
         builder.stub!(:build)
       end
+    end
+  end
+  
+  if  Config::CONFIG['target_os'] =~ /mswin|mingw/
+    it "should put library links at the end in mingw" do
+      module Foo
+
+        code = <<-CODE
+        #include <windows.h>
+            #include <mmsystem.h>
+            int go() {
+              mixerOpen(0, 0,0,0,0);
+              return 3;
+            }
+        CODE
+      
+        inline do |builder|
+          builder.library 'Winmm'
+          builder.c_raw code
+        end
+        inline do |builder|
+          builder.use_compiler Inliner::Compilers::GPlusPlus
+          builder.library 'Winmm'
+          builder.c_raw code
+        end
+      end
+      
     end
   end
 

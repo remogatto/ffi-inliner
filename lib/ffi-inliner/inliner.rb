@@ -1,5 +1,4 @@
 module Inliner
-
   DEV_NULL = if Config::CONFIG['target_os'] =~ /mswin|mingw/
                'nul'
              else
@@ -35,18 +34,19 @@ module Inliner
   end
 
   class FilenameManager
-    def initialize(mod, code)
+    def initialize(mod, code, libraries)
       @mod = mod.name.gsub(/[:#<>\/]/, '_')
       @code = code
+      @libraries = libraries
     end
     def cached?
-      exists?
+      File.exists?(so_fn)
     end
     def exists?
       File.exists?(c_fn)
     end
     def base_fn
-      File.join(Inliner.directory, "#{@mod}_#{(Digest::MD5.new << @code).to_s[0, 4]}")      
+      File.join(Inliner.directory, "#{@mod}_#{(Digest::MD5.new << @code << @libraries.to_s).to_s[0, 4]}")      
     end
     %w(c rb log).each do |ext|
       define_method("#{ext}_fn") { "#{base_fn}.#{ext}" }
@@ -70,9 +70,11 @@ module Inliner
       def initialize(fm = nil, libraries = nil)
         @fm = fm
         @libraries = libraries
-        @progname = cmd.split.first
+        # ignore sh -c '
+        @progname = cmd.split.reject{|part| ["'", "sh", "-c"].include? part}[0]
       end
       def compile
+        puts 'running:' + cmd if $VERBOSE
         raise "Compile error! See #{@fm.log_fn}" unless system(cmd)
       end
       private
@@ -85,6 +87,7 @@ module Inliner
       def exists?
         IO.popen("#{@progname} 2>&1") { |f| f.gets } ? true : false
       end
+      
       def ldshared
         if Config::CONFIG['target_os'] =~ /darwin/
           'gcc -dynamic -bundle -fPIC'
@@ -92,22 +95,22 @@ module Inliner
           'gcc -shared -fPIC'
         end
       end
+      
       def cmd
-        "#{ldshared} #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
+        if Config::CONFIG['target_os'] =~ /mswin|mingw/
+          "sh -c ' #{ldshared} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{libs}' 2>\"#{@fm.log_fn}\""
+        else
+          "#{ldshared} #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{after_libs} 2>\"#{@fm.log_fn}\""
+        end
       end
     end
 
     class GPlusPlus < GCC
+      
       def ldshared
         if Config::CONFIG['target_os'] =~ /darwin/
           'g++ -dynamic -bundle -fPIC'
-        elsif ENV['OS'] == 'Windows_NT'
-          # windows requires use of sh first
-          def cmd
-            "sh -c 'g++ -shared -fPIC #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\"' 2>\"#{@fm.log_fn}\""
-          end        
         else
-          # Linux
           'g++ -shared -fPIC'
         end
       end
@@ -173,7 +176,7 @@ module Inliner
     end
 
     def build
-      @fm = FilenameManager.new(@mod, @code)
+      @fm = FilenameManager.new(@mod, @code, @libraries)
       @compiler = @compiler.check_and_create(@fm, @libraries)
       unless @fm.cached?
         write_files(@code, @sig)
@@ -194,6 +197,8 @@ module Inliner
     end
 
     def cached?(name, code)
+      require 'ruby-debug'
+      debugger
       File.exists?(cname(name, code))
     end
 
