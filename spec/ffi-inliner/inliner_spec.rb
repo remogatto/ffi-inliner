@@ -75,7 +75,7 @@ describe 'Inliner' do
 
   end
 
-  it 'should recompile  if the code is changed after a failure' do
+  it 'should recompile if the code is changed after a failure' do
     # unfortunately this doesn't check the real functionality, which is that if a dll is deleted, it isn't re-produced
     begin
       module Foo
@@ -147,11 +147,16 @@ describe 'Inliner' do
     end
   end
 
-  it 'should allow users to add libraries' do
+  it 'should allow users to add external libraries' do
     module Foo
       inline do |builder|
-        builder.library 'foolib1', 'foolib2'
+        builder.libraries 'foolib1', 'foolib2'
         builder.stub!(:build)
+        builder.libraries.should == ['foolib1', 'foolib2']
+      end
+      inline "int func() { return 0; }", :libraries => ['foolib1', 'foolib2'] do |builder|
+        builder.stub!(:build)
+        builder.libraries.should == ['foolib1', 'foolib2']
       end
     end
   end

@@ -131,15 +131,17 @@ module Inliner
   end
 
   class Builder
-    attr_reader :code, :compiler
+    attr_reader :code, :compiler, :libraries
     def initialize(mod, code = "", options = {})
       make_pointer_types
       @mod = mod
       @code = code
       @sig = [parse_signature(@code)] unless @code.empty?
-      options = { :use_compiler => Compilers::GCC }.merge(options)
+
+      options = { :use_compiler => Compilers::GCC, :libraries => [] }.merge(options)
+
       @compiler = options[:use_compiler]
-      @libraries = []
+      @libraries = options[:libraries] 
     end
 
     def map(type_map)
@@ -150,8 +152,8 @@ module Inliner
       options[:quoted] ? @code << "#include \"#{fn}\"\n" : @code << "#include <#{fn}>\n"
     end
 
-    def library(*libraries)
-      (@libraries ||= []).concat(libraries)
+    def libraries(*libraries)
+      @libraries.concat(libraries)
     end
 
     def c(code)
