@@ -59,7 +59,7 @@ or from github:
 
 Special thanks to:
 
-* Ryan Davis for its inspiring
+* Ryan Davis for his inspiring
   RubyInline[http://www.zenspider.com/ZSS/Products/RubyInline/].
 
 * Roger Pack for improving support for Windows platforms.
