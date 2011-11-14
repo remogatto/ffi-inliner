@@ -50,6 +50,8 @@ class C < Builder
     map ? @types.merge!(map) : @types
   end; alias map types
 
+  alias c_raw raw
+
   def include(path, options = {})
     delimiter = (options[:quoted] || options[:local]) ? ['"', '"'] : ['<', '>']
 
@@ -67,7 +69,7 @@ class C < Builder
     @signatures << parsed
 
     raw code
-  end
+  end; alias c function
 
   def struct(ffi_struct)
     raw %{
