@@ -4,88 +4,83 @@ class Builder
   attr_reader :code, :compiler, :libraries
 
   def initialize(name, code = "", options = {})
-    make_pointer_types
-
     @name = name
     @code = code
-    @sig  = [parse_signature(@code)] unless @code.empty?
 
     options = { :compiler => Compilers::GCC, :libraries => [] }.merge(options)
 
-    @compiler  = options[:compiler]
+    @compiler  = options[:use_compiler] || options[:compiler]
     @libraries = options[:libraries]
-  end
 
-  def map(type_map)
-    @types.merge!(type_map)
-  end
-
-  def include(fn, options = {})
-    options[:quoted] ? @code << "#include \"#{fn}\"\n" : @code << "#include <#{fn}>\n"
-  end
-
-  def libraries(*libraries)
-    @libraries.concat(libraries)
-  end
-
-  def c(code)
-    (@sig ||= []) << parse_signature(code)
-
-    @code << (@compiler == Compilers::GPlusPlus ? "extern \"C\" {\n#{code}\n}" : code )
-  end
-
-  def c_raw(code)
-    @code << code
+    @signatures = (@code && @code.empty?) ? [] : [parse_signature(@code)]
+    @files      = FileManager.new(@name, @code, @libraries)
+    @compiler   = @compiler.check_and_create(@files, @libraries)
   end
 
   def use_compiler(compiler)
     @compiler = compiler
   end
 
+  def libraries(*libraries)
+    @libraries.concat(libraries)
+  end
+
+  def map(type_map)
+    @types.merge!(type_map)
+  end
+
+  def raw(code)
+    @code << code
+  end
+
+  def include(path, options = {})
+    delimiter = (options[:quoted] || options[:local]) ? ['"', '"'] : ['<', '>']
+
+    raw "#include #{delimiter.first}#{path}#{delimiter.last}\n"
+  end
+
+  def function(code)
+    @signatures << parse_signature(code)
+
+    raw @compiler.function(code)
+  end
+
   def struct(ffi_struct)
-    @code << "typedef struct {"
-    ffi_struct.layout.fields.each do |field|
-      @code << "#{field} #{field.name};\n"
-    end
-    @code << "} #{ffi_struct.class.name}"
+    raw %{
+      typedef struct {#{
+        ffi_struct.layout.fields.map {|field|
+          "#{field} #{field.name};"
+        }.join("\n")
+      }} #{ffi_struct.class.name}
+    }
   end
 
   def build
-    @files    = FilenameManager.new(@name, @code, @libraries)
-    @compiler = @compiler.check_and_create(@files, @libraries)
-
     unless @files.cached?
-      write_files(@code, @sig)
+      write_files(@code, @signatures)
 
       @compiler.compile
-      @name.instance_eval generate_ffi(@sig)
+      @name.instance_eval generate_ffi(@signatures)
     else
       @name.instance_eval(File.read(@files.rb_fn))
     end
   end
 
   private
-  def make_pointer_types
-    @types = C_TO_FFI.dup
-
-    C_TO_FFI.each_key {|k|
-      @types["#{k} *"] = :pointer
-    }
-  end
-
   def to_ffi_type(c_type)
-    @types[c_type]
+    if c_type.include? ?*
+      :pointer
+    else
+      C_TO_FFI[c_type]
+    end
   end
 
   # Based on RubyInline code by Ryan Davis
   # Copyright (c) 2001-2007 Ryan Davis, Zen Spider Software
   def strip_comments(code)
-    # strip c-comments
-    src = code.gsub(%r%\s*/\*.*?\*/%m, '')
-    # strip cpp-comments
-    src = src.gsub(%r%^\s*//.*?\n%, '')
-    src = src.gsub(%r%[ \t]*//[^\n]*%, '')
-    src
+    code.gsub(%r(\s*/\*.*?\*/)m, '').
+         gsub(%r(^\s*//.*?\n), '').
+         gsub(%r([ \t]*//[^\n]*), '')
   end
 
   # Based on RubyInline code by Ryan Davis
@@ -93,59 +88,45 @@ class Builder
   def parse_signature(code)
     sig = strip_comments(code)
 
-    # strip preprocessor directives
-    sig.gsub!(/^\s*\#.*(\\\n.*)*/, '')
-    # strip {}s
-    sig.gsub!(/\{[^\}]*\}/, '{ }')
-    # clean and collapse whitespace
-    sig.gsub!(/\s+/, ' ')
+    sig.gsub!(/^\s*\#.*(\\\n.*)*/, '') # strip preprocessor directives
+    sig.gsub!(/\{[^\}]*\}/, '{ }')     # strip {}s
+    sig.gsub!(/\s+/, ' ')              # clean and collapse whitespace
 
-    # types = 'void|int|char|char\s\*|void\s\*'
-    types = @types.keys.map{|x| Regexp.escape(x)}.join('|')
-    sig = sig.gsub(/\s*\*\s*/, ' * ').strip
+    types = C_TO_FFI.keys.map { |x| Regexp.escape(x) }.join('|')
+    sig   = sig.gsub(/\s*\*\s*/, ' * ').strip
 
-    if /(#{types})\s*(\w+)\s*\(([^)]*)\)/ =~ sig then
-      return_type, function_name, arg_string = $1, $2, $3
-      args = []
-      arg_string.split(',').each do |arg|
+    whole, return_type, function_name, arg_string = sig.match(/(#{types})\s*(\w+)\s*\(([^)]*)\)/).to_a
 
-        # helps normalize into 'char * varname' form
-        arg = arg.gsub(/\s*\*\s*/, ' * ').strip
-
-        if /(((#{types})\s*\*?)+)\s+(\w+)\s*$/ =~ arg then
-          args.push($1)
-        elsif arg != "void" then
-          warn "WAR\NING: '#{arg}' not understood"
-        end
-      end
-
-      arity = args.size
-
-      return {
-        'return' => return_type,
-        'name'   => function_name,
-        'args'   => args,
-        'arity'  => arity
-      }
+    unless whole
+      raise SyntaxError, "cannot parse signature: #{sig}"
     end
 
-    raise SyntaxError, "Can't parse signature: #{sig}"
+    args = arg_string.split(',').map {|arg|
+      # helps normalize into 'char * varname' form
+      arg = arg.gsub(/\s*\*\s*/, ' * ').strip
 
+      if /(((#{types})\s*\*?)+)\s+(\w+)\s*$/ =~ arg
+        $1
+      elsif arg != "void" then
+        warn "WARNING: '#{arg}' not understood"
+      end
+    }
+
+    ::Struct.new(:return, :name, :arguments, :arity).new(return_type, function_name, args, args.empty? ? -1 : args.length)
   end
 
   def generate_ffi(sig)
     ffi_code = %{
       extend FFI::Library
+
       ffi_lib '#{@files.so_fn}'
     }
 
-    unless sig.nil?
-      sig.each do |s|
-        args = s['args'].map { |arg| ":#{to_ffi_type(arg)}" }.join(',')
+    sig.each {|s|
+      args = s.arguments.map { |arg| ":#{to_ffi_type(arg)}" }.join(', ')
 
-        ffi_code << "attach_function '#{s['name']}', [#{args}], :#{to_ffi_type(s['return'])}\n"
-      end
-    end
+      ffi_code << "attach_function '#{s.name}', [#{args}], :#{to_ffi_type(s.return)}\n"
+    }
 
     ffi_code
   end

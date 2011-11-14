@@ -2,7 +2,7 @@ module FFI; module Inliner; module Compilers
 
 class GCC < Compiler
   def exists?
-    !!IO.popen("#{@name} 2>&1") { |f| f.read(1) }
+    !!::IO.popen("#{@name} 2>&1") { |f| f.read(1) }
   end
 
   def ldshared

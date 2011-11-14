@@ -2,7 +2,7 @@ module FFI; module Inliner; module Compilers
 
 class TCC < Compiler
   def exists?
-    !!IO.popen("#{@name}") { |f| f.read(1) }
+    !!::IO.popen("#{@name}") { |f| f.read(1) }
   end
 
   def cmd

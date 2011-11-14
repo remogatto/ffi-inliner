@@ -16,7 +16,8 @@ class FileManager
   end
 
   def base_fn
-    File.join(Inliner.directory, "#{@name}_#{Digest::SHA256.hexdigest(@code << @libraries.to_s)}")
+    File.join(Inliner.directory,
+      "#{@name}_#{(Digest::SHA256.new << @code << @libraries.to_s).to_s[0 .. 10]}")
   end
 
   %w(c rb log).each do |ext|

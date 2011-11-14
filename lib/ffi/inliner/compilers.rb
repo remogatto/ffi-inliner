@@ -5,8 +5,9 @@ class Compiler
 
   def self.check_and_create(fm = nil, libraries = nil)
     compiler = new(fm, libraries)
+
     unless compiler.exists?
-      raise "Can't find compiler #{compiler.class}"
+      raise "can't find compiler #{compiler.class}"
     else
       compiler
     end
@@ -19,10 +20,14 @@ class Compiler
     @name = cmd.split.reject { |p| [?', 'sh', '-c'].include? p }.first
   end
 
+  def function(code)
+    code
+  end
+
   def compile
     puts 'running:' + cmd if $VERBOSE
 
-    raise "Compile error! See #{@files.log_fn}" unless system(cmd)
+    raise "compile error! See #{@files.log_fn}" unless system(cmd)
   end
 
   private

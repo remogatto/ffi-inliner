@@ -1,20 +1,15 @@
 module FFI
 
 module Inliner
-  NULL =
-    if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
-      'nul'
-    else
-      '/dev/null'
+  NULL = case RbConfig::CONFIG['target_os']
+    when /mswin|mingw/ then 'nul'
+    else                    '/dev/null'
     end
 
-  LIB_EXT =
-    if RbConfig::CONFIG['target_os'] =~ /darwin/
-      '.dylib'
-    elsif RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
-      '.dll'
-    else
-      '.so'
+  LIB_EXT = case RbConfig::CONFIG['target_os']
+    when /darwin/      then '.dylib'
+    when /mswin|mingw/ then '.dll'
+    else                    '.so'
     end
 
   C_TO_FFI = {
@@ -30,7 +25,7 @@ module Inliner
   }
 
   def self.directory
-    @directory ||= File.expand_path(File.join(Dir.tmpdir, ".ffi-inliner-#{Process.uid}"))
+    @directory ||= File.expand_path(File.join('~', '.ffi-inliner'))
 
     if File.exists?(@directory) && !File.directory?(@directory)
       FileUtils.rm_rf @directory
@@ -39,6 +34,8 @@ module Inliner
     if !File.exists?(@directory)
       FileUtils.mkdir(@directory)
     end
+
+    @directory
   end
 
   def inline(code = "", options = {})
@@ -50,6 +47,6 @@ end
 
 end
 
-require 'ffi/inline/file_manager'
-require 'ffi/inline/compilers'
-require 'ffi/inline/builder'
+require 'ffi/inliner/file_manager'
+require 'ffi/inliner/compilers'
+require 'ffi/inliner/builder'
