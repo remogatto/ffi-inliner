@@ -1,37 +1,54 @@
-module FFI; module Inliner
+require 'ffi/inliner/compilers/tcc'
+require 'ffi/inliner/compilers/gcc'
 
-class Builder
+module FFI; module Inliner; module Builders
+
+class C < Builder
+  Compilers = {
+    :gcc => Compilers::GCC,
+    :tcc => Compilers::TCC
+  }
+
+  C_TO_FFI = {
+    'void'          => :void,
+    'char'          => :char,
+    'unsigned char' => :uchar,
+    'int'           => :int,
+    'unsigned int'  => :uint,
+    'long'          => :long,
+    'unsigned long' => :ulong,
+    'float'         => :float,
+    'double'        => :double,
+  }
+
   attr_reader :code, :compiler, :libraries
 
   def initialize(name, code = "", options = {})
-    @name = name
-    @code = code
+    super(name, code)
 
-    options = { :compiler => Compilers::GCC, :libraries => [] }.merge(options)
+    use_compiler options[:use_compiler] || options[:compiler] || :gcc
 
-    @compiler  = options[:use_compiler] || options[:compiler]
-    @libraries = options[:libraries]
+    @types     = C_TO_FFI.dup
+    @libraries = options[:libraries] || []
 
     @signatures = (@code && @code.empty?) ? [] : [parse_signature(@code)]
-    @files      = FileManager.new(@name, @code, @libraries)
-    @compiler   = @compiler.check_and_create(@files, @libraries)
   end
 
   def use_compiler(compiler)
-    @compiler = compiler
+    @compiler = if compiler.is_a?(Symbol)
+      Compilers[compiler.downcase].new(@code, @libraries)
+    else
+      compiler.new(@code, @libraries)
+    end
   end
 
   def libraries(*libraries)
     @libraries.concat(libraries)
   end
 
-  def map(type_map)
-    @types.merge!(type_map)
-  end
-
-  def raw(code)
-    @code << code
-  end
+  def types(map = nil)
+    map ? @types.merge!(map) : @types
+  end; alias map types
 
   def include(path, options = {})
     delimiter = (options[:quoted] || options[:local]) ? ['"', '"'] : ['<', '>']
@@ -42,7 +59,7 @@ class Builder
   def function(code)
     @signatures << parse_signature(code)
 
-    raw @compiler.function(code)
+    raw code
   end
 
   def struct(ffi_struct)
@@ -55,23 +72,12 @@ class Builder
     }
   end
 
-  def build
-    unless @files.cached?
-      write_files(@code, @signatures)
-
-      @compiler.compile
-      @name.instance_eval generate_ffi(@signatures)
-    else
-      @name.instance_eval(File.read(@files.rb_fn))
-    end
-  end
-
   private
   def to_ffi_type(c_type)
     if c_type.include? ?*
       :pointer
     else
-      C_TO_FFI[c_type]
+      @types[c_type]
     end
   end
 
@@ -92,7 +98,7 @@ class Builder
     sig.gsub!(/\{[^\}]*\}/, '{ }')     # strip {}s
     sig.gsub!(/\s+/, ' ')              # clean and collapse whitespace
 
-    types = C_TO_FFI.keys.map { |x| Regexp.escape(x) }.join('|')
+    types = @types.keys.map { |x| Regexp.escape(x) }.join('|')
     sig   = sig.gsub(/\s*\*\s*/, ' * ').strip
 
     whole, return_type, function_name, arg_string = sig.match(/(#{types})\s*(\w+)\s*\(([^)]*)\)/).to_a
@@ -115,34 +121,19 @@ class Builder
     ::Struct.new(:return, :name, :arguments, :arity).new(return_type, function_name, args, args.empty? ? -1 : args.length)
   end
 
-  def generate_ffi(sig)
-    ffi_code = %{
+  def ruby
+    %{
       extend FFI::Library
 
-      ffi_lib '#{@files.so_fn}'
+      ffi_lib '#{@compiler.compile}'
+
+      #{@signatures.map {|s|
+        args = s.arguments.map { |arg| ":#{to_ffi_type(arg)}" }.join(', ')
+
+        "attach_function '#{s.name}', [#{args}], :#{to_ffi_type(s.return)}"
+      }.join("\n")}
     }
-
-    sig.each {|s|
-      args = s.arguments.map { |arg| ":#{to_ffi_type(arg)}" }.join(', ')
-
-      ffi_code << "attach_function '#{s.name}', [#{args}], :#{to_ffi_type(s.return)}\n"
-    }
-
-    ffi_code
-  end
-
-  def write_c(code)
-    File.open(@files.c_fn, 'w') { |f| f << code }
-  end
-
-  def write_ffi(sig)
-    File.open(@files.rb_fn, 'w') { |f| f << generate_ffi(sig) }
-  end
-
-  def write_files(code, sig)
-    write_c(code)
-    write_ffi(sig)
   end
 end
 
-end; end
+end; end; end

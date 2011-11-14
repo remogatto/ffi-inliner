@@ -5,14 +5,6 @@ describe FFI::Inliner do
     module Foo
       extend FFI::Inliner
     end
-
-    @cache_dir = File.join(SPEC_BASEPATH, 'ffi-inliner/cache')
-
-    Inliner.stub!(:directory).and_return(@cache_dir)
-  end
-
-  after do
-    FileUtils.rm_rf(@cache_dir)
   end
 
   it 'should extend the module with inline methods' do
@@ -102,17 +94,16 @@ describe FFI::Inliner do
   it 'should be configured using the block form' do
     module Foo
       inline do |builder|
-        builder.c %q{
-          int func_1()
-          {
+        builder.function %{
+          int func_1 () {
             return 0;
-          };
+          }
         }
-        builder.c %q{
-          int func_2()
-          {
+
+        builder.function %{
+          int func_2 () {
             return 1;
-          };
+          }
         }
       end
     end
@@ -128,12 +119,14 @@ describe FFI::Inliner do
     module Foo
       inline do |builder|
         builder.map 'my_struct_t *' => 'pointer'
-        builder.c_raw %q{
+
+        builder.raw %q{
           typedef struct {
             int dummy;
           } my_struct_t;
         }
-        builder.c 'my_struct_t* use_my_struct(my_struct_t *my_struct) { return my_struct; }'
+
+        builder.function 'my_struct_t* use_my_struct (my_struct_t* my_struct) { return my_struct; }'
       end
     end
     my_struct = MyStruct.new
@@ -180,13 +173,13 @@ describe FFI::Inliner do
 
         inline do |builder|
           builder.library 'Winmm'
-          builder.c_raw code
+          builder.raw code
         end
 
         inline do |builder|
-          builder.use_compiler Inliner::Compilers::GPlusPlus
+          builder.use_compiler FFI::Inliner::Compilers::GXX
           builder.library 'Winmm'
-          builder.c_raw code
+          builder.raw code
         end
       end
     end
@@ -232,7 +225,7 @@ EOC
   it 'should return the current compiler' do
     module Foo
       inline do |builder|
-        builder.compiler.should == Inliner::Compilers::GCC
+        builder.compiler.should == FFI::Inliner::Compilers::GCC
       end
     end
   end
@@ -250,56 +243,63 @@ EOC
       module Foo
         inline "int boom("
       end
-    }.should raise_error(/Can\'t parse/)
+    }.should raise_error(/cannot parse/)
 
     proc {
       module Foo
-        inline "int boom() { printf \"Hello\" }"
+        inline 'int boom() { printf "Hello" }'
       end
-    }.should raise_error(/Compile error/)
+    }.should raise_error(/compile error/)
   end
 
   describe 'Compiler' do
     before do
-      class DummyCC < Inliner::Compilers::Compiler
+      class DummyCC < FFI::Inliner::Compiler
         def cmd
           "dummycc -shared"
         end
       end
     end
 
-    it 'should return the progname' do
-      DummyCC.new.progname.should == 'dummycc'
+    it 'should return the name' do
+      DummyCC.new.name.should == 'dummycc'
     end
   end
 
-  describe 'GPlusPlus compiler' do
+  describe 'GXX compiler' do
     it 'should compile and link a shim C library that encapsulates C++ code' do
       module Foo
         inline do |builder|
-          builder.use_compiler Inliner::Compilers::GPlusPlus
-          builder.c_raw <<-code
+          builder.use_compiler FFI::Inliner::Compilers::GXX
+          builder.types 'char *' => :string
+
+          builder.raw %{
             #include <iostream>
             #include <string>
+
             using namespace std;
-            class Greeter  {
-                public:
+
+            class Greeter
+            {
+              public:
                 Greeter();
                 string say_hello();
-              };
-              Greeter::Greeter() { };
-              string Greeter::say_hello() {
+            };
+
+            Greeter::Greeter () { };
+            string Greeter::say_hello ()
+            {
                 return "Hello foos!";
-              };
-              code
-              builder.map 'char *' => 'string'
-              builder.c <<-code
-              const char* say_hello()
-              {
-                Greeter greeter;
-                return greeter.say_hello().c_str();
-              }
-            code
+            };
+          }
+
+          builder.function %{
+            const char* say_hello () {
+              Greeter greeter;
+
+              return greeter.say_hello().c_str();
+            }
+          }
         end
       end
 

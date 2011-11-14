@@ -1,8 +1,33 @@
 module FFI; module Inliner; module Compilers
 
 class GCC < Compiler
-  def exists?
-    !!::IO.popen("#{@name} 2>&1") { |f| f.read(1) }
+  def self.exists?
+    !!::IO.popen('gcc 2>&1') { |f| f.read(1) }
+  end
+
+  def initialize (code, libraries = [])
+    super('gcc')
+
+    @code      = code
+    @libraries = libraries
+  end
+
+  def digest
+    Digest::SHA256.hexdigest(@code)
+  end
+
+  def input
+    File.join(Inliner.directory, "#{digest}.c").tap {|path|
+      File.open(path, 'w') { |f| f.write(@code) }
+    }
+  end
+
+  def output
+    File.join(Inliner.directory, "#{digest}.#{LIB_EXT}")
+  end
+
+  def log
+    File.join(Inliner.directory, "#{digest}.log")
   end
 
   def ldshared
@@ -13,12 +38,19 @@ class GCC < Compiler
     end
   end
 
-  def cmd
-    if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
-      "sh -c ' #{ldshared} -o \"#{@files.so_fn}\" \"#{@files.c_fn}\" #{libs}' 2>\"#{@files.log_fn}\""
+  def compile
+    system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
+      %{sh -c '#{ldshared} -o "#{output}" "#{input}" #{libs}' 2>"#{log}"}
     else
-      "#{ldshared} #{libs} -o \"#{@files.so_fn}\" \"#{@files.c_fn}\" #{libs} 2>\"#{@files.log_fn}\""
-    end
+      %{#{ldshared} -o "#{output}" "#{input}" #{libs} 2>"#{log}"}
+    end)
+
+    output
+  end
+
+  private
+  def libs
+    @libraries.map { |lib| "-l#{lib}" }.join(' ')
   end
 end
 

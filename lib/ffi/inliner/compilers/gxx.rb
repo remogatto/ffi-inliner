@@ -1,10 +1,23 @@
 module FFI; module Inliner; module Compilers
 
+module FFI; module Inliner; module Compilers
+
 class GXX < GCC
-  def function(code)
-    %{extern "C" {
-      #{code}
-    }}
+  def self.exists?
+    !!::IO.popen('g++ 2>&1') { |f| f.read(1) }
+  end
+
+  def initialize (code, libraries = [])
+    super('g++')
+
+    @code      = code
+    @libraries = libraries
+  end
+
+  def input
+    File.join(Inliner.directory, "#{digest}.cpp").tap {|path|
+      File.open(path, 'w') { |f| f.write(@code) }
+    }
   end
 
   def ldshared
@@ -15,5 +28,7 @@ class GXX < GCC
     end
   end
 end
+
+end; end; end
 
 end; end; end
