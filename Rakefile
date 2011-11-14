@@ -1,44 +1,10 @@
-# Look in the tasks/setup.rb file for the various options that can be
-# configured in this Rakefile. The .rake files in the tasks directory
-# are where the options are used.
+#! /usr/bin/env ruby
+require 'rake'
 
-$:.unshift(File.expand_path(File.join(File.dirname(__FILE__), 'lib')))
-require 'ffi-inliner/version'
+task :default => :test
 
-begin
-  require 'bones'
-  Bones.setup
-rescue LoadError
-  begin
-    load 'tasks/setup.rb'
-  rescue LoadError
-    raise RuntimeError, '### please install the "bones" gem ###'
-  end
+task :test do
+	Dir.chdir 'spec/ffi-inliner'
+
+	sh 'rspec inliner_spec.rb --color --format specdoc'
 end
-
-CLOBBER << '*~' << '*.*~'
-
-PROJ.name = 'ffi-inliner'
-PROJ.authors = 'Andrea Fazzi'
-PROJ.email = 'andrea.fazzi@alcacoop.it'
-PROJ.url = 'http://github.com/remogatto/ffi-inliner'
-PROJ.version = Inliner::VERSION
-
-PROJ.readme_file = 'README.rdoc'
-
-PROJ.rubyforge.name = 'ffi-inliner'
-
-PROJ.ann.paragraphs << 'FEATURES' << 'SYNOPSIS' << 'REQUIREMENTS' << 'DOWNLOAD/INSTALL' << 'CREDITS'
-PROJ.ann.email[:from] = 'andrea.fazzi@alcacoop.it'
-PROJ.ann.email[:to] << 'ruby-ffi@googlegroups.com'
-PROJ.ann.email[:server] = 'smtp.gmail.com'
-
-PROJ.spec.opts << '--color' << '-fs'
-
-PROJ.ruby_opts = []
-
-depend_on 'ffi', '>=0.4.0'
-
-task :default => 'spec'
-
-# EOF

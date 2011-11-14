@@ -1,36 +1,36 @@
-module Inliner
-  DEV_NULL = if Config::CONFIG['target_os'] =~ /mswin|mingw/
-               'nul'
-             else
-               '/dev/null'
-             end
+module FFI
 
-  LIB_EXT = if Config::CONFIG['target_os'] =~ /darwin/
-              '.dylib'
-            elsif Config::CONFIG['target_os'] =~ /mswin|mingw/
-              '.dll'
-            else
-              '.so'
-            end
+module Inliner
+  NULL =
+    if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
+      'nul'
+    else
+      '/dev/null'
+    end
+
+  LIB_EXT =
+    if RbConfig::CONFIG['target_os'] =~ /darwin/
+      '.dylib'
+    elsif RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
+      '.dll'
+    else
+      '.so'
+    end
 
   C_TO_FFI = {
-    'void' => :void,
-    'char' => :char,
+    'void'          => :void,
+    'char'          => :char,
     'unsigned char' => :uchar,
-    'int' => :int,
-    'unsigned int' => :uint,
-    'long' => :long,
+    'int'           => :int,
+    'unsigned int'  => :uint,
+    'long'          => :long,
     'unsigned long' => :ulong,
-    'float' => :float,
-    'double' => :double,
+    'float'         => :float,
+    'double'        => :double,
   }
 
-  @@__inliner_directory = File.expand_path(File.join('~/', '.ffi-inliner'))
-
-  class << self
-    def directory
-      @@__inliner_directory
-    end
+  def self.directory
+    @inliner_directory ||= File.expand_path(File.join('~/', '.ffi-inliner'))
   end
 
   class FilenameManager
@@ -46,7 +46,7 @@ module Inliner
       File.exists?(c_fn)
     end
     def base_fn
-      File.join(Inliner.directory, "#{@mod}_#{(Digest::MD5.new << @code << @libraries.to_s).to_s[0, 4]}")      
+      File.join(Inliner.directory, "#{@mod}_#{(Digest::MD5.new << @code << @libraries.to_s).to_s[0, 4]}")
     end
     %w(c rb log).each do |ext|
       define_method("#{ext}_fn") { "#{base_fn}.#{ext}" }
@@ -60,7 +60,7 @@ module Inliner
     class Compiler
       attr_reader :progname
       def self.check_and_create(fm = nil, libraries = nil)
-        compiler = new(fm, libraries) 
+        compiler = new(fm, libraries)
         unless compiler.exists?
           raise "Can't find compiler #{compiler.class}"
         else
@@ -87,17 +87,17 @@ module Inliner
       def exists?
         IO.popen("#{@progname} 2>&1") { |f| f.gets } ? true : false
       end
-      
+
       def ldshared
-        if Config::CONFIG['target_os'] =~ /darwin/
+        if RbConfig::CONFIG['target_os'] =~ /darwin/
           'gcc -dynamic -bundle -fPIC'
         else
           'gcc -shared -fPIC'
         end
       end
-      
+
       def cmd
-        if Config::CONFIG['target_os'] =~ /mswin|mingw/
+        if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
           "sh -c ' #{ldshared} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{libs}' 2>\"#{@fm.log_fn}\""
         else
           "#{ldshared} #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{libs} 2>\"#{@fm.log_fn}\""
@@ -106,9 +106,9 @@ module Inliner
     end
 
     class GPlusPlus < GCC
-      
+
       def ldshared
-        if Config::CONFIG['target_os'] =~ /darwin/
+        if RbConfig::CONFIG['target_os'] =~ /darwin/
           'g++ -dynamic -bundle -fPIC'
         else
           'g++ -shared -fPIC'
@@ -121,7 +121,7 @@ module Inliner
         IO.popen("#{@progname}") { |f| f.gets } ? true : false
       end
       def cmd
-        if Config::CONFIG['target_os'] =~ /mswin|mingw/
+        if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
           "tcc -rdynamic -shared #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
         else
           "tcc -shared #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
@@ -141,13 +141,13 @@ module Inliner
       options = { :use_compiler => Compilers::GCC, :libraries => [] }.merge(options)
 
       @compiler = options[:use_compiler]
-      @libraries = options[:libraries] 
+      @libraries = options[:libraries]
     end
 
     def map(type_map)
       @types.merge!(type_map)
     end
-    
+
     def include(fn, options = {})
       options[:quoted] ? @code << "#include \"#{fn}\"\n" : @code << "#include <#{fn}>\n"
     end
@@ -188,14 +188,14 @@ module Inliner
         @mod.instance_eval(File.read(@fm.rb_fn))
       end
     end
-    
+
     private
 
     def make_pointer_types
       @types = C_TO_FFI.dup
       C_TO_FFI.each_key do |k|
         @types["#{k} *"] = :pointer
-      end    
+      end
     end
 
     def to_ffi_type(c_type)
@@ -258,7 +258,7 @@ module Inliner
       raise SyntaxError, "Can't parse signature: #{sig}"
 
     end
-    
+
     def generate_ffi(sig)
 
       ffi_code = <<PREAMBLE
@@ -276,6 +276,7 @@ PREAMBLE
 
       ffi_code
     end
+
     def write_c(code)
       File.open(@fm.c_fn, 'w') { |f| f << code }
     end
@@ -299,9 +300,9 @@ PREAMBLE
   end
 
   private
-
   def __inliner_make_directory
     FileUtils.mkdir(Inliner.directory) unless (File.exists?(Inliner.directory) && File.directory?(Inliner.directory))
   end
+end
 
 end

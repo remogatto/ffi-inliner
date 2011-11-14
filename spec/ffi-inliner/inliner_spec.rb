@@ -1,29 +1,34 @@
 require File.expand_path(File.join(File.dirname(__FILE__), "../spec_helper"))
 
 describe 'Inliner' do
-
   before do
     module Foo
       extend Inliner
     end
+
     @cache_dir = File.join(SPEC_BASEPATH, 'ffi-inliner/cache')
+
     Inliner.stub!(:directory).and_return(@cache_dir)
   end
-  
+
   after do
     FileUtils.rm_rf(@cache_dir)
   end
 
   it 'should extend the module with inline methods' do
     module Foo
-      inline <<-code
-      long factorial(int max) 
-      {
-          int i = max, result = 1;
-          while (i >= 2) { result *= i--; }
-          return result;
+      inline %{
+        long factorial (int max) {
+            int i = max, result = 1;
+
+            while (i >= 2) {
+              result *= i--;
+            }
+
+            return result;
+        }
       }
-      code
+
       inline 'int simple_math() { return 1 + 1; }'
     end
 
@@ -60,7 +65,6 @@ describe 'Inliner' do
   end
 
   it 'should recompile if the code is updated' do
-
     module Foo
       inline "int updated_func() { return 1 + 1; }"
     end
@@ -72,7 +76,6 @@ describe 'Inliner' do
     end
 
     Foo.updated_func.should == 4
-
   end
 
   it 'should recompile if the code is changed after a failure' do
@@ -88,11 +91,11 @@ describe 'Inliner' do
       rescue NoMethodError
       end
     end
-    
+
     module Foo
       inline "int updated_func2() { return 2 + 2; }"
     end
-    
+
     Foo.updated_func2.should == 4
   end
 
@@ -100,23 +103,24 @@ describe 'Inliner' do
     module Foo
       inline do |builder|
         builder.c %q{
-          int func_1() 
-          { 
-            return 0; 
+          int func_1()
+          {
+            return 0;
           };
         }
         builder.c %q{
           int func_2()
-          { 
-            return 1; 
+          {
+            return 1;
           };
         }
       end
     end
+
     Foo.func_1.should == 0
     Foo.func_2.should == 1
   end
-  
+
   it 'should allow users to add type maps' do
     class MyStruct < FFI::Struct
       layout :dummy, :int
@@ -160,8 +164,8 @@ describe 'Inliner' do
       end
     end
   end
-  
-  if  Config::CONFIG['target_os'] =~ /mswin|mingw/
+
+  if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
     it "should put library links at the end in mingw" do
       module Foo
 
@@ -173,18 +177,18 @@ describe 'Inliner' do
               return 3;
             }
         CODE
-      
+
         inline do |builder|
           builder.library 'Winmm'
           builder.c_raw code
         end
+
         inline do |builder|
           builder.use_compiler Inliner::Compilers::GPlusPlus
           builder.library 'Winmm'
           builder.c_raw code
         end
       end
-      
     end
   end
 
@@ -192,7 +196,7 @@ describe 'Inliner' do
     pending do
       class MyStruct < FFI::Struct
         layout :a, :int, \
-        :b, :char, 
+        :b, :char,
         :c, :pointer
       end
       module Foo
@@ -242,12 +246,13 @@ EOC
   #   end
 
   it 'should raise errors' do
-    lambda {
+    proc {
       module Foo
         inline "int boom("
       end
     }.should raise_error(/Can\'t parse/)
-    lambda {
+
+    proc {
       module Foo
         inline "int boom() { printf \"Hello\" }"
       end
@@ -262,13 +267,13 @@ EOC
         end
       end
     end
+
     it 'should return the progname' do
       DummyCC.new.progname.should == 'dummycc'
     end
   end
 
   describe 'GPlusPlus compiler' do
-    
     it 'should compile and link a shim C library that encapsulates C++ code' do
       module Foo
         inline do |builder|
@@ -290,17 +295,16 @@ EOC
               builder.map 'char *' => 'string'
               builder.c <<-code
               const char* say_hello()
-              { 
+              {
                 Greeter greeter;
                 return greeter.say_hello().c_str();
               }
             code
         end
       end
+
       Foo.say_hello.should == 'Hello foos!'
     end
-
   end
-
 end
 
