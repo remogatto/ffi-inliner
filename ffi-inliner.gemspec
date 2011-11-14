@@ -16,5 +16,6 @@ Gem::Specification.new {|s|
 
   s.add_dependency 'ffi', '>=0.4.0'
 
+  s.add_development_dependency 'rake'
   s.add_development_dependency 'rspec'
 }

@@ -1,9 +1,9 @@
-require File.expand_path(File.join(File.dirname(__FILE__), "../spec_helper"))
+require 'ffi/inliner'
 
-describe 'Inliner' do
+describe FFI::Inliner do
   before do
     module Foo
-      extend Inliner
+      extend FFI::Inliner
     end
 
     @cache_dir = File.join(SPEC_BASEPATH, 'ffi-inliner/cache')
@@ -200,7 +200,7 @@ describe 'Inliner' do
         :c, :pointer
       end
       module Foo
-        extend Inliner
+        extend FFI::Inliner
         inline do |builder|
           builder.struct MyStruct
           builder.code.should == <<EOC
