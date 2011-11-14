@@ -1,7 +1,5 @@
 module FFI; module Inliner; module Compilers
 
-module FFI; module Inliner; module Compilers
-
 class GXX < GCC
   def self.exists?
     !!::IO.popen('g++ 2>&1') { |f| f.read(1) }
@@ -28,7 +26,5 @@ class GXX < GCC
     end
   end
 end
-
-end; end; end
 
 end; end; end

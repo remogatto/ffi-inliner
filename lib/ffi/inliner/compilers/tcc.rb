@@ -31,11 +31,13 @@ class TCC < Compiler
   end
 
   def compile
-    system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
+    unless system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
       "tcc -rdynamic -shared #{libs} -o \"#{output}\" \"#{input}\" 2>\"#{log}\""
     else
       "tcc -shared #{libs} -o \"#{output}\" \"#{input}\" 2>\"#{log}\""
     end)
+      raise "compile error: see logs at #{log}"
+    end
 
     output
   end

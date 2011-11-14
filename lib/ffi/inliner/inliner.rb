@@ -24,7 +24,15 @@ module Inliner
     code     = args.first.is_a?(String) ? args.shift : ''
     options  = args.first.is_a?(Hash)   ? args.shift : {}
 
-    builder = Builder.const_get(language.capitalize).new(self, code, options)
+    builder = Builders.constants.find {|name|
+      name.downcase == language.downcase || Builders.const_get(name).aliases.member?(language.downcase)
+    }
+
+    if builder.nil?
+      raise ArgumentError, "builder for #{language} not found"
+    end
+
+    builder = Builders.const_get(builder).new(self, code, options)
     yield builder if block_given?
     builder.build
   end
@@ -32,5 +40,5 @@ end
 
 end
 
-require 'ffi/inliner/builders'
 require 'ffi/inliner/compilers'
+require 'ffi/inliner/builders'

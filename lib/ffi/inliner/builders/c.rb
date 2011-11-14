@@ -9,7 +9,7 @@ class C < Builder
     :tcc => Compilers::TCC
   }
 
-  C_TO_FFI = {
+  ToFFI = {
     'void'          => :void,
     'char'          => :char,
     'unsigned char' => :uchar,
@@ -26,17 +26,17 @@ class C < Builder
   def initialize(name, code = "", options = {})
     super(name, code)
 
-    use_compiler options[:use_compiler] || options[:compiler] || :gcc
-
-    @types     = C_TO_FFI.dup
+    @types     = ToFFI.dup
     @libraries = options[:libraries] || []
 
     @signatures = (@code && @code.empty?) ? [] : [parse_signature(@code)]
+
+    use_compiler options[:use_compiler] || options[:compiler] || :gcc
   end
 
   def use_compiler(compiler)
     @compiler = if compiler.is_a?(Symbol)
-      Compilers[compiler.downcase].new(@code, @libraries)
+      self.class::Compilers[compiler.downcase].new(@code, @libraries)
     else
       compiler.new(@code, @libraries)
     end
@@ -56,8 +56,15 @@ class C < Builder
     raw "#include #{delimiter.first}#{path}#{delimiter.last}\n"
   end
 
-  def function(code)
-    @signatures << parse_signature(code)
+  def function(code, signature = nil)
+    parsed = parse_signature(code)
+
+    if signature
+      parsed[:arguments] = signature[:arguments] if signature[:arguments]
+      parsed[:return]    = signature[:return]    if signature[:return]
+    end
+
+    @signatures << parsed
 
     raw code
   end
@@ -73,11 +80,13 @@ class C < Builder
   end
 
   private
-  def to_ffi_type(c_type)
-    if c_type.include? ?*
+  def to_ffi_type(type)
+    if type.is_a?(Symbol)
+      type
+    elsif type.include? ?*
       :pointer
     else
-      @types[c_type]
+      @types[type]
     end
   end
 
@@ -101,7 +110,7 @@ class C < Builder
     types = @types.keys.map { |x| Regexp.escape(x) }.join('|')
     sig   = sig.gsub(/\s*\*\s*/, ' * ').strip
 
-    whole, return_type, function_name, arg_string = sig.match(/(#{types})\s*(\w+)\s*\(([^)]*)\)/).to_a
+    whole, return_type, function_name, arg_string = sig.match(/(#{types}|.*?\ \*)\s*(\w+)\s*\(([^)]*)\)/).to_a
 
     unless whole
       raise SyntaxError, "cannot parse signature: #{sig}"
@@ -111,7 +120,7 @@ class C < Builder
       # helps normalize into 'char * varname' form
       arg = arg.gsub(/\s*\*\s*/, ' * ').strip
 
-      if /(((#{types})\s*\*?)+)\s+(\w+)\s*$/ =~ arg
+      if /(((#{types}|.*?\ \*)\s*\*?)+)\s+(\w+)\s*$/ =~ arg
         $1
       elsif arg != "void" then
         warn "WARNING: '#{arg}' not understood"

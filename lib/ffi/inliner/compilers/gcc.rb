@@ -39,11 +39,13 @@ class GCC < Compiler
   end
 
   def compile
-    system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
+    unless system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
       %{sh -c '#{ldshared} -o "#{output}" "#{input}" #{libs}' 2>"#{log}"}
     else
       %{#{ldshared} -o "#{output}" "#{input}" #{libs} 2>"#{log}"}
     end)
+      raise "compile error: see logs at #{log}"
+    end
 
     output
   end

@@ -1,6 +1,10 @@
 module FFI; module Inliner
 
 class Builder
+  def self.aliases
+    []
+  end
+
   attr_reader :code
 
   def initialize(name, code = "")
@@ -22,3 +26,6 @@ class Builder
 end
 
 end; end
+
+require 'ffi/inliner/builders/c'
+require 'ffi/inliner/builders/cpp'

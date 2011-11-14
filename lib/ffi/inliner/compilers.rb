@@ -2,9 +2,9 @@ module FFI; module Inliner
 
 class Compiler
   LIB_EXT = case RbConfig::CONFIG['target_os']
-    when /darwin/      then '.dylib'
-    when /mswin|mingw/ then '.dll'
-    else                    '.so'
+    when /darwin/      then 'dylib'
+    when /mswin|mingw/ then 'dll'
+    else                    'so'
     end
 
   attr_reader :name
