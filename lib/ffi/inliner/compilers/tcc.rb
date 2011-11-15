@@ -5,7 +5,10 @@ Compiler.define :tcc do
     `tcc -v 2>&1'`; $?.success?
   end
 
-  def compile
+  def compile (code, libraries = [])
+    @code      = code
+    @libraries = libraries
+
     return output if File.exists?(output)
 
     unless system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/

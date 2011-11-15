@@ -7,7 +7,7 @@ Compiler.define :gcc do
 
   def compile (code, libraries = [])
     @code      = code
-    @libraries = []
+    @libraries = libraries
 
     return output if File.exists?(output)
 
