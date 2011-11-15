@@ -29,7 +29,7 @@ class C < Builder
     @types     = ToFFI.dup
     @libraries = options[:libraries] || []
 
-    @signatures = (@code && @code.empty?) ? [] : [parse_signature(@code)]
+    @signatures = (code && code.empty?) ? [] : [parse_signature(code)]
 
     use_compiler options[:use_compiler] || options[:compiler] || :gcc
   end
@@ -81,14 +81,30 @@ class C < Builder
     }
   end
 
+  def ruby
+    %{
+      extend FFI::Library
+
+      ffi_lib '#{@compiler.compile}'
+
+      #{@signatures.map {|s|
+        args = s.arguments.map { |arg| ":#{to_ffi_type(arg)}" }.join(', ')
+
+        "attach_function '#{s.name}', [#{args}], :#{to_ffi_type(s.return)}"
+      }.join("\n")}
+    }
+  end
+
   private
   def to_ffi_type(type)
     if type.is_a?(Symbol)
       type
     elsif type.include? ?*
       :pointer
+    elsif (FFI.find_type(type.to_sym) rescue false)
+      type.to_sym
     else
-      @types[type]
+      @types[type] or raise "type #{type} not supported"
     end
   end
 
@@ -106,13 +122,13 @@ class C < Builder
     sig = strip_comments(code)
 
     sig.gsub!(/^\s*\#.*(\\\n.*)*/, '') # strip preprocessor directives
-    sig.gsub!(/\{[^\}]*\}/, '{ }')     # strip {}s
+    sig.gsub!(/\s*\{.*/m, '')          # strip function body
     sig.gsub!(/\s+/, ' ')              # clean and collapse whitespace
+    sig.gsub!(/\s*\*\s*/, ' * ')       # clean pointers
+    sig.gsub!(/\s*const\s*/, '')       # remove const
+    sig.strip!
 
-    types = @types.keys.map { |x| Regexp.escape(x) }.join('|')
-    sig   = sig.gsub(/\s*\*\s*/, ' * ').strip
-
-    whole, return_type, function_name, arg_string = sig.match(/(#{types}|.*?\ \*)\s*(\w+)\s*\(([^)]*)\)/).to_a
+    whole, return_type, function_name, arg_string = sig.match(/(.*?(?:\ \*)?)\s*(\w+)\s*\(([^)]*)\)/).to_a
 
     unless whole
       raise SyntaxError, "cannot parse signature: #{sig}"
@@ -122,28 +138,12 @@ class C < Builder
       # helps normalize into 'char * varname' form
       arg = arg.gsub(/\s*\*\s*/, ' * ').strip
 
-      if /(((#{types}|.*?\ \*)\s*\*?)+)\s+(\w+)\s*$/ =~ arg
-        $1
-      elsif arg != "void" then
-        warn "WARNING: '#{arg}' not understood"
-      end
+      whole, type = arg.gsub(/\s*\*\s*/, ' * ').strip.match(/(((.*?(?:\ \*)?)\s*\*?)+)\s+(\w+)\s*$/).to_a
+
+      type
     }
 
     ::Struct.new(:return, :name, :arguments, :arity).new(return_type, function_name, args, args.empty? ? -1 : args.length)
-  end
-
-  def ruby
-    %{
-      extend FFI::Library
-
-      ffi_lib '#{@compiler.compile}'
-
-      #{@signatures.map {|s|
-        args = s.arguments.map { |arg| ":#{to_ffi_type(arg)}" }.join(', ')
-
-        "attach_function '#{s.name}', [#{args}], :#{to_ffi_type(s.return)}"
-      }.join("\n")}
-    }
   end
 end
 
