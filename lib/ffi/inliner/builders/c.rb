@@ -99,12 +99,14 @@ class C < Builder
   def to_ffi_type(type)
     if type.is_a?(Symbol)
       type
+    elsif @types[type]
+      @types[type]
     elsif type.include? ?*
       :pointer
     elsif (FFI.find_type(type.to_sym) rescue false)
       type.to_sym
     else
-      @types[type] or raise "type #{type} not supported"
+      raise "type #{type} not supported"
     end
   end
 
