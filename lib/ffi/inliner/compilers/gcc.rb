@@ -18,7 +18,7 @@ class GCC < Compiler
 
   def input
     File.join(Inliner.directory, "#{digest}.c").tap {|path|
-      File.open(path, 'w') { |f| f.write(@code) }
+      File.open(path, 'w') { |f| f.write(@code) } unless File.exists?(path)
     }
   end
 
@@ -39,6 +39,8 @@ class GCC < Compiler
   end
 
   def compile
+    return output if File.exists?(output)
+
     unless system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
       %{sh -c '#{ldshared} -o "#{output}" "#{input}" #{libs}' 2>"#{log}"}
     else

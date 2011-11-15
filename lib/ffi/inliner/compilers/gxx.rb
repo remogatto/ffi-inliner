@@ -14,7 +14,7 @@ class GXX < GCC
 
   def input
     File.join(Inliner.directory, "#{digest}.cpp").tap {|path|
-      File.open(path, 'w') { |f| f.write(@code) }
+      File.open(path, 'w') { |f| f.write(@code) } unless File.exists?(path)
     }
   end
 
