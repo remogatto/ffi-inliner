@@ -24,15 +24,7 @@ module Inliner
     code     = args.first.is_a?(String) ? args.shift : ''
     options  = args.first.is_a?(Hash)   ? args.shift : {}
 
-    builder = Builders.constants.find {|name|
-      name.downcase == language.downcase || Builders.const_get(name).aliases.member?(language.downcase)
-    }
-
-    if builder.nil?
-      raise ArgumentError, "builder for #{language} not found"
-    end
-
-    builder = Builders.const_get(builder).new(self, code, options)
+    builder = Builder[language].new(self, code, options)
     yield builder if block_given?
     builder.build
   end

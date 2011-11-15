@@ -1,14 +1,9 @@
 require 'ffi/inliner/compilers/tcc'
 require 'ffi/inliner/compilers/gcc'
 
-module FFI; module Inliner; module Builders
+module FFI; module Inliner
 
-class C < Builder
-  Compilers = {
-    :gcc => Compilers::GCC,
-    :tcc => Compilers::TCC
-  }
-
+Builder.define :c do
   ToFFI = {
     'void'          => :void,
     'char'          => :char,
@@ -23,8 +18,8 @@ class C < Builder
 
   attr_reader :code, :compiler, :libraries
 
-  def initialize(name, code = "", options = {})
-    super(name, code)
+  def initialize(target, code = "", options = {})
+    super(target, code)
 
     @types     = ToFFI.dup
     @libraries = options[:libraries] || []
@@ -32,14 +27,6 @@ class C < Builder
     @signatures = (code && code.empty?) ? [] : [parse_signature(code)]
 
     use_compiler options[:use_compiler] || options[:compiler] || :gcc
-  end
-
-  def use_compiler(compiler)
-    @compiler = if compiler.is_a?(Symbol)
-      self.class::Compilers[compiler.downcase].new(@code, @libraries)
-    else
-      compiler.new(@code, @libraries)
-    end
   end
 
   def libraries(*libraries)
@@ -85,7 +72,7 @@ class C < Builder
     %{
       extend FFI::Library
 
-      ffi_lib '#{@compiler.compile}'
+      ffi_lib '#{@compiler.compile(@code, @libraries)}'
 
       #{@signatures.map {|s|
         args = s.arguments.map { |arg| ":#{to_ffi_type(arg)}" }.join(', ')
@@ -149,4 +136,4 @@ class C < Builder
   end
 end
 
-end; end; end
+end; end

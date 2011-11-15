@@ -42,53 +42,51 @@ describe FFI::Inliner do
     Foo.func_1(ptr, 0xff, 0xffff, FFI::MemoryPointer.from_string('c')).should == ptr
   end
 
-  pending do
-    it 'should load cached libraries' do
-      File.should_receive(:read).once.and_return("\'dummy\'")
+  it 'should load cached libraries' do
+    File.should_receive(:open).once
 
-      module Foo
-        inline "void* cached_func() {}"
-      end
-
-      module Foo
-        inline "void* cached_func() {}"
-      end
+    module Foo
+      inline "void* cached_func() {}"
     end
 
-    it 'should recompile if the code is updated' do
-      module Foo
-        inline "int updated_func() { return 1 + 1; }"
-      end
+    module Foo
+      inline "void* cached_func() {}"
+    end
+  end
 
-      Foo.updated_func.should == 2
-
-      module Foo
-        inline "int updated_func() { return 2 + 2; }"
-      end
-
-      Foo.updated_func.should == 4
+  it 'should recompile if the code is updated' do
+    module Foo
+      inline "int updated_func() { return 1 + 1; }"
     end
 
-    it 'should recompile if the code is changed after a failure' do
-      # unfortunately this doesn't check the real functionality, which is that if a dll is deleted, it isn't re-produced
+    Foo.updated_func.should == 2
+
+    module Foo
+      inline "int updated_func() { return 2 + 2; }"
+    end
+
+    Foo.updated_func.should == 4
+  end
+
+  it 'should recompile if the code is changed after a failure' do
+    # unfortunately this doesn't check the real functionality, which is that if a dll is deleted, it isn't re-produced
+    begin
+      module Foo
+        inline "int updated_func2() { asdf }"
+      end
+    rescue
       begin
-        module Foo
-          inline "int updated_func2() { asdf }"
-        end
-      rescue
-        begin
-          Foo.updated_func2
-          raise 'should have failed'
-        rescue NoMethodError
-        end
+        Foo.updated_func2
+        raise 'should have failed'
+      rescue NoMethodError
       end
-
-      module Foo
-        inline "int updated_func2() { return 2 + 2; }"
-      end
-
-      Foo.updated_func2.should == 4
     end
+
+    module Foo
+      inline "int updated_func2() { return 2 + 2; }"
+    end
+
+    Foo.updated_func2.should == 4
   end
 
   it 'should be configured using the block form' do
@@ -177,7 +175,7 @@ describe FFI::Inliner do
         end
 
         inline do |builder|
-          builder.use_compiler FFI::Inliner::Compilers::GXX
+          builder.use_compiler :gxx
           builder.library 'Winmm'
           builder.raw code
         end
@@ -210,33 +208,13 @@ EOC
     end
   end
 
-  # FIXME: Eventually, find a better way to spec this
-  #
-  # it 'should use different compiler as specified in the configuration block' do
-  #   module Foo
-  #     inline do |builder|
-  #       builder.use_compiler Inliner::Compilers::TCC
-  #       builder.c "int func_1() { return 1 + 1; }"
-  #     end
-  #   end
-  #   Foo.func_1.should == 2
-  # end
-
   it 'should return the current compiler' do
     module Foo
       inline do |builder|
-        builder.compiler.class.should == FFI::Inliner::Compilers::GCC
+        builder.compiler.should == FFI::Inliner::Compiler[:gcc]
       end
     end
   end
-
-  #   it 'should be configured using the hash form' do
-  #     tcc = mock('tcc', :exists? => true, :compile => nil)
-  #     Inliner::Compilers::TCC.should_receive(:new).and_return(tcc)
-  #     module Foo
-  #       inline "int func_1() { return 1; }", :compiler => Inliner::Compilers::TCC
-  #     end
-  #   end
 
   it 'should raise errors' do
     proc {

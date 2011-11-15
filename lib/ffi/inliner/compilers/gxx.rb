@@ -1,15 +1,8 @@
-module FFI; module Inliner; module Compilers
+module FFI; module Inliner
 
-class GXX < GCC
-  def self.exists?
-    !!::IO.popen('g++ 2>&1') { |f| f.read(1) }
-  end
-
-  def initialize (code, libraries = [])
-    super('g++')
-
-    @code      = code
-    @libraries = libraries
+Compiler.define Compiler[:gcc], :gxx, 'g++' do
+  def exists?
+    `g++ -v 2>&1'`; $?.success?
   end
 
   def input
@@ -27,4 +20,4 @@ class GXX < GCC
   end
 end
 
-end; end; end
+end; end

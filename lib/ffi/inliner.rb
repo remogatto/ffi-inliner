@@ -1,6 +1,7 @@
-require 'digest/sha2'
+require 'digest/sha1'
 require 'fileutils'
 require 'rbconfig'
+require 'shellwords'
 
 require 'rubygems'
 require 'ffi'

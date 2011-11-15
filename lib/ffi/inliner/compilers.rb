@@ -1,24 +1,47 @@
 module FFI; module Inliner
 
 class Compiler
-  LIB_EXT = case RbConfig::CONFIG['target_os']
+  Extension = case RbConfig::CONFIG['target_os']
     when /darwin/      then 'dylib'
     when /mswin|mingw/ then 'dll'
     else                    'so'
     end
 
-  attr_reader :name
+  @compilers = []
 
-  def self.new (*args, &block)
-    unless exists?
-      raise "can't find compiler #{self.class}"
-    end
+  def self.[] (name)
+    return name if name.is_a?(Compiler)
 
-    super(*args, &block)
+    @compilers.find {|compiler|
+      compiler.name.downcase == name.downcase ||
+      compiler.aliases.any? { |ali| ali.downcase == name.downcase }
+    }
   end
 
-  def initialize(name)
-    @name = name
+  def self.define (name, *aliases, &block)
+    inherit_from = self
+
+    if name.is_a?(Compiler)
+      name = name.class
+    end
+
+    if name.is_a?(Class)
+      inherit_from = name
+      name         = aliases.shift
+    end
+
+    @compilers << Class.new(inherit_from, &block).new(name, *aliases)
+  end
+
+  attr_reader :name, :aliases
+
+  def initialize(name, *aliases)
+    @name    = name
+    @aliases = aliases
+  end
+
+  def exists?
+    raise 'the Compiler has not been specialized'
   end
 
   def compile

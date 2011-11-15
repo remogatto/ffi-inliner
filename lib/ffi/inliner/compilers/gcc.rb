@@ -1,19 +1,30 @@
-module FFI; module Inliner; module Compilers
+module FFI; module Inliner
 
-class GCC < Compiler
-  def self.exists?
-    !!::IO.popen('gcc 2>&1') { |f| f.read(1) }
+Compiler.define :gcc do
+  def exists?
+    `gcc -v 2>&1'`; $?.success?
   end
 
-  def initialize (code, libraries = [])
-    super('gcc')
-
+  def compile (code, libraries = [])
     @code      = code
-    @libraries = libraries
+    @libraries = []
+
+    return output if File.exists?(output)
+
+    unless system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
+      "sh -c '#{ldshared} -o #{output.shellescape} #{input.shellescape} #{libs}' 2>#{log.shellescape}"
+    else
+      "#{ldshared} -o #{output.shellescape} #{input.shellescape} #{libs} 2>#{log.shellescape}"
+    end)
+      raise "compile error: see logs at #{log}"
+    end
+
+    output
   end
 
+  private
   def digest
-    Digest::SHA256.hexdigest(@code)
+    Digest::SHA1.hexdigest(@code + @libraries.to_s)
   end
 
   def input
@@ -23,7 +34,7 @@ class GCC < Compiler
   end
 
   def output
-    File.join(Inliner.directory, "#{digest}.#{LIB_EXT}")
+    File.join(Inliner.directory, "#{digest}.#{Compiler::Extension}")
   end
 
   def log
@@ -38,24 +49,9 @@ class GCC < Compiler
     end
   end
 
-  def compile
-    return output if File.exists?(output)
-
-    unless system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
-      %{sh -c '#{ldshared} -o "#{output}" "#{input}" #{libs}' 2>"#{log}"}
-    else
-      %{#{ldshared} -o "#{output}" "#{input}" #{libs} 2>"#{log}"}
-    end)
-      raise "compile error: see logs at #{log}"
-    end
-
-    output
-  end
-
-  private
   def libs
-    @libraries.map { |lib| "-l#{lib}" }.join(' ')
+    @libraries.map { |lib| "-l#{lib}".shellescape }.join(' ')
   end
 end
 
-end; end; end
+end; end

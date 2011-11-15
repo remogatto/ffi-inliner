@@ -1,19 +1,27 @@
-module FFI; module Inliner; module Compilers
+module FFI; module Inliner
 
-class TCC < Compiler
-  def self.exists?
-    !!::IO.popen("#{@name}") { |f| f.read(1) }
+Compiler.define :tcc do
+  def exists?
+    `tcc -v 2>&1'`; $?.success?
   end
 
-  def initialize (code, libraries = [])
-    super('tcc')
+  def compile
+    return output if File.exists?(output)
 
-    @code      = code
-    @libraries = libraries
+    unless system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
+      "tcc -rdynamic -shared #{libs} -o #{output.shellescape} #{input}.shellescape 2>#{log.shellescape}"
+    else
+      "tcc -shared #{libs} -o #{output.shellescape} #{input.shellescape} 2>#{log.shellescape}"
+    end)
+      raise "compile error: see logs at #{log}"
+    end
+
+    output
   end
 
+  private
   def digest
-    Digest::SHA256.hexdigest(@code)
+    Digest::SHA1.hexdigest(@code + @libraries.to_s)
   end
 
   def input
@@ -23,31 +31,16 @@ class TCC < Compiler
   end
 
   def output
-    File.join(Inliner.directory, "#{digest}.#{LIB_EXT}")
+    File.join(Inliner.directory, "#{digest}.#{Compiler::Extension}")
   end
 
   def log
     File.join(Inliner.directory, "#{digest}.log")
   end
 
-  def compile
-    return output if File.exists?(output)
-
-    unless system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
-      "tcc -rdynamic -shared #{libs} -o \"#{output}\" \"#{input}\" 2>\"#{log}\""
-    else
-      "tcc -shared #{libs} -o \"#{output}\" \"#{input}\" 2>\"#{log}\""
-    end)
-      raise "compile error: see logs at #{log}"
-    end
-
-    output
-  end
-
-  private
   def libs
-    @libraries.map { |lib| "-l#{lib}" }.join(' ')
+    @libraries.map { |lib| "-l#{lib}".shellescape }.join(' ')
   end
 end
 
-end; end; end
+end; end

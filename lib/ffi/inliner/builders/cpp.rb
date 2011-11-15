@@ -1,17 +1,9 @@
 require 'ffi/inliner/builders/c'
 require 'ffi/inliner/compilers/gxx'
 
-module FFI; module Inliner; module Builders
+module FFI; module Inliner
 
-class CPlusPlus < C
-  def self.aliases
-    [:cxx, :cpp]
-  end
-
-  Compilers = {
-    :gxx => Compilers::GXX
-  }
-
+Builder.define Builder[:c], :cplusplus, :cxx, :cpp, 'c++' do
   def initialize(name, code = "", options = {})
     super(name, code, options) rescue nil
 
@@ -30,6 +22,7 @@ class CPlusPlus < C
 
     raw 'extern "C" {' << code << '}'
   end
+
 end
 
-end; end; end
+end; end
