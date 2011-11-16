@@ -12,9 +12,9 @@ Compiler.define :tcc do
     return output if File.exists?(output)
 
     unless system(if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
-      "tcc -rdynamic -shared #{libs} -o #{output.shellescape} #{input}.shellescape 2>#{log.shellescape}"
+      "sh -c '#{ldshared} #{libs} -o #{output.shellescape} #{input.shellescape}' 2>#{log.shellescape}"
     else
-      "tcc -shared #{libs} -o #{output.shellescape} #{input.shellescape} 2>#{log.shellescape}"
+      "#{ldshared} #{libs} -o #{output.shellescape} #{input.shellescape} 2>#{log.shellescape}"
     end)
       raise "compile error: see logs at #{log}"
     end
@@ -39,6 +39,14 @@ Compiler.define :tcc do
 
   def log
     File.join(Inliner.directory, "#{digest}.log")
+  end
+
+  def ldshared
+    if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
+      "tcc -rdynamic -shared -fPIC #{options}"
+    else
+      "tcc -shared #{options}"
+    end
   end
 
   def libs

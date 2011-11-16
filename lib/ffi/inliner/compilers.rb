@@ -33,7 +33,8 @@ class Compiler
     @compilers << Class.new(inherit_from, &block).new(name, *aliases)
   end
 
-  attr_reader :name, :aliases
+  attr_reader   :name, :aliases
+  attr_accessor :options
 
   def initialize(name, *aliases)
     @name    = name

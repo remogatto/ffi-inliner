@@ -13,9 +13,9 @@ Compiler.define Compiler[:gcc], :gxx, 'g++' do
 
   def ldshared
     if RbConfig::CONFIG['target_os'] =~ /darwin/
-      'g++ -dynamic -bundle -fPIC'
+      "g++ -dynamic -bundle -fPIC #{options}"
     else
-      'g++ -shared -fPIC'
+      "g++ -shared -fPIC #{options}"
     end
   end
 end
