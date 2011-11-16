@@ -30,12 +30,11 @@ describe FFI::Inliner do
 
   it 'should correctly parse function signature' do
     module Foo
-      inline <<-code
-      void* func_1(void* ptr, unsigned int i, unsigned long l, char *c)
-      {
-          return ptr;
+      inline %{
+        void* func_1 (void* ptr, unsigned int i, unsigned long l, char *c) {
+            return ptr;
+        }
       }
-      code
     end
 
     ptr = FFI::MemoryPointer.new(:int)
@@ -147,10 +146,13 @@ describe FFI::Inliner do
       inline do |builder|
         builder.libraries 'foolib1', 'foolib2'
         builder.stub!(:build)
+        builder.stub!(:symbols) { [] }
         builder.libraries.should == ['foolib1', 'foolib2']
       end
+
       inline "int func() { return 0; }", :libraries => ['foolib1', 'foolib2'] do |builder|
         builder.stub!(:build)
+        builder.stub!(:symbols) { [] }
         builder.libraries.should == ['foolib1', 'foolib2']
       end
     end

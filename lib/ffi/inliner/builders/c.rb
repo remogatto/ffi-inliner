@@ -18,15 +18,17 @@ Builder.define :c do
 
   attr_reader :code, :compiler, :libraries
 
-  def initialize(target, code = "", options = {})
-    super(target, code)
+  def initialize(code = nil, options = {})
+    super(code)
 
     @types     = ToFFI.dup
     @libraries = options[:libraries] || []
 
-    @signatures = (code && code.empty?) ? [] : [parse_signature(code)]
+    @signatures = []
 
     use_compiler options[:use_compiler] || options[:compiler] || :gcc
+
+    @signatures << parse_signature(code) if code && !code.empty?
   end
 
   def libraries(*libraries)
@@ -68,21 +70,6 @@ Builder.define :c do
     }
   end
 
-  def ruby
-    %{
-      extend FFI::Library
-
-      ffi_lib '#{@compiler.compile(@code, @libraries)}'
-
-      #{@signatures.map {|s|
-        args = s.arguments.map { |arg| ":#{to_ffi_type(arg)}" }.join(', ')
-
-        "attach_function '#{s.name}', [#{args}], :#{to_ffi_type(s.return)}"
-      }.join("\n")}
-    }
-  end
-
-  private
   def to_ffi_type(type)
     if type.is_a?(Symbol)
       type
@@ -91,11 +78,21 @@ Builder.define :c do
     elsif type.include? ?*
       :pointer
     elsif (FFI.find_type(type.to_sym) rescue false)
-      type.to_sym
+      type
     else
       raise "type #{type} not supported"
-    end
+    end.to_sym
   end
+
+  def shared_object
+    @compiler.compile(@code, @libraries)
+  end
+
+  def signatures
+    @signatures
+  end
+
+private
 
   # Based on RubyInline code by Ryan Davis
   # Copyright (c) 2001-2007 Ryan Davis, Zen Spider Software
@@ -119,9 +116,7 @@ Builder.define :c do
 
     whole, return_type, function_name, arg_string = sig.match(/(.*?(?:\ \*)?)\s*(\w+)\s*\(([^)]*)\)/).to_a
 
-    unless whole
-      raise SyntaxError, "cannot parse signature: #{sig}"
-    end
+    raise SyntaxError, "cannot parse signature: #{sig}" unless whole
 
     args = arg_string.split(',').map {|arg|
       # helps normalize into 'char * varname' form
@@ -132,7 +127,7 @@ Builder.define :c do
       type
     }
 
-    ::Struct.new(:return, :name, :arguments, :arity).new(return_type, function_name, args, args.empty? ? -1 : args.length)
+    Signature.new(return_type, function_name, args, args.empty? ? -1 : args.length)
   end
 end
 

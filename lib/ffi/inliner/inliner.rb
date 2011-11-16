@@ -19,14 +19,40 @@ module Inliner
     @directory
   end
 
-  def inline(*args)
+  def inline(*args, &block)
+    if self == Class
+      instance_inline(*args, &block)
+    else
+      singleton_inline(*args, &block)
+    end
+  end
+
+  def singleton_inline(*args)
     language = args.first.is_a?(Symbol) ? args.shift : :c
     code     = args.first.is_a?(String) ? args.shift : ''
     options  = args.first.is_a?(Hash)   ? args.shift : {}
 
-    builder = Builder[language].new(self, code, options)
+    builder = Builder[language].new(code, options)
     yield builder if block_given?
-    builder.build
+    mod = builder.build
+
+    builder.symbols.each {|sym|
+      define_singleton_method sym, &mod.method(sym)
+    }
+  end
+
+  def instance_inline(*args)
+    language = args.first.is_a?(Symbol) ? args.shift : :c
+    code     = args.first.is_a?(String) ? args.shift : ''
+    options  = args.first.is_a?(Hash)   ? args.shift : {}
+
+    builder = Builder[language].new(code, options)
+    yield builder if block_given?
+    mod = builder.build
+
+    builder.symbols.each {|sym|
+      define_method sym, &mod.method(sym)
+    }
   end
 end
 

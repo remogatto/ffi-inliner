@@ -4,8 +4,8 @@ require 'ffi/inliner/compilers/gxx'
 module FFI; module Inliner
 
 Builder.define Builder[:c], :cplusplus, :cxx, :cpp, 'c++' do
-  def initialize(name, code = "", options = {})
-    super(name, code, options) rescue nil
+  def initialize(code = "", options = {})
+    super(code, options) rescue nil
 
     use_compiler options[:use_compiler] || options[:compiler] || :gxx
   end
@@ -22,7 +22,6 @@ Builder.define Builder[:c], :cplusplus, :cxx, :cpp, 'c++' do
 
     raw 'extern "C" {' << code << '}'
   end
-
 end
 
 end; end

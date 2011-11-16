@@ -1,5 +1,7 @@
 module FFI; module Inliner
 
+Signature = ::Struct.new(:return, :name, :arguments, :arity)
+
 class Builder
   @builders = []
 
@@ -34,9 +36,8 @@ class Builder
 
   attr_reader :code, :compiler
 
-  def initialize(target, code = "")
-    @target = target
-    @code   = code
+  def initialize(code = "")
+    @code = code
   end
 
   def use_compiler(compiler)
@@ -47,12 +48,37 @@ class Builder
     @code << code
   end
 
-  def ruby
+  def to_ffi_type(type)
     raise 'the Builder has not been specialized'
   end
 
+  def shared_object
+    raise 'the Builder has not been specialized'
+  end
+
+  def signatures
+    raise 'the Builder has not been specialized'
+  end
+
+  def symbols
+    signatures.map { |s| s.name.to_sym }
+  end
+
   def build
-    @target.instance_eval ruby
+    b = builder = self
+
+    mod = Module.new
+    mod.instance_eval {
+      extend FFI::Library
+
+      ffi_lib builder.shared_object
+
+      builder.signatures.each {|s|
+        attach_function s.name, s.arguments.map { |a| b.to_ffi_type(a) }, b.to_ffi_type(s.return)
+      }
+    }
+
+    mod
   end
 end
 
