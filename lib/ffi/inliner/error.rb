@@ -1,0 +1,1 @@
+class CompilationError < RuntimeError; end

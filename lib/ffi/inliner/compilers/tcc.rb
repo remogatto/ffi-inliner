@@ -16,7 +16,7 @@ Compiler.define :tcc do
     else
       "#{ldshared} #{libs} -o #{output.shellescape} #{input.shellescape} 2>#{log.shellescape}"
     end)
-      raise "compile error: see logs at #{log}"
+      raise CompilationError, "compile error: see logs at #{log}"
     end
 
     output

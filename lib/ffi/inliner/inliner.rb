@@ -1,3 +1,5 @@
+require 'ffi/inliner/error'
+
 module FFI
 
 module Inliner
