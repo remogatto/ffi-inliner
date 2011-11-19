@@ -39,6 +39,12 @@ Builder.define :c do
     map ? @types.merge!(map) : @types
   end; alias map types
 
+  def raw(code)
+    whole, path, line = caller.find { |line| line !~ /ffi-inliner/ }.match(/^(.*?):(\d+):in/).to_a
+
+    super "#line #{line.to_i - 1} #{path.inspect}\n" << code
+  end
+
   alias c_raw raw
 
   def include(path, options = {})
