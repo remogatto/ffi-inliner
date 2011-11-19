@@ -24,7 +24,7 @@ Compiler.define :gcc do
 
   private
   def digest
-    Digest::SHA1.hexdigest(@code + @libraries.to_s + @options)
+    Digest::SHA1.hexdigest(@code + @libraries.to_s + @options.to_s)
   end
 
   def input
