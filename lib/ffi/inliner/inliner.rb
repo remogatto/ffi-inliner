@@ -20,7 +20,7 @@ module Inliner
   end
 
   def inline(*args, &block)
-    if self == Class
+    if self.class == Class
       instance_inline(*args, &block)
     else
       singleton_inline(*args, &block)

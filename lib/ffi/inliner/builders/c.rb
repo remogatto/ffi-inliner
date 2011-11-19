@@ -39,7 +39,9 @@ Builder.define :c do
     map ? @types.merge!(map) : @types
   end; alias map types
 
-  def raw(code)
+  def raw(code, no_line = false)
+    return super(code) if no_line
+
     whole, path, line = caller.find { |line| line !~ /ffi-inliner/ }.match(/^(.*?):(\d+):in/).to_a
 
     super "#line #{line.to_i - 1} #{path.inspect}\n" << code
@@ -50,7 +52,7 @@ Builder.define :c do
   def include(path, options = {})
     delimiter = (options[:quoted] || options[:local]) ? ['"', '"'] : ['<', '>']
 
-    raw "#include #{delimiter.first}#{path}#{delimiter.last}\n"
+    raw "#include #{delimiter.first}#{path}#{delimiter.last}\n", true
   end
 
   def function(code, signature = nil)
@@ -73,7 +75,7 @@ Builder.define :c do
           "#{field} #{field.name};"
         }.join("\n")
       }} #{ffi_struct.class.name}
-    }
+    }, true
   end
 
   def to_ffi_type(type)
