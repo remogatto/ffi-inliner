@@ -44,7 +44,7 @@ Builder.define :c do
 
     whole, path, line = caller.find { |line| line !~ /ffi-inliner/ }.match(/^(.*?):(\d+):in/).to_a
 
-    super "#line #{line.to_i - 1} #{path.inspect}\n" << code
+    super "\n#line #{line.to_i} #{path.inspect}\n" << code
   end
 
   alias c_raw raw
@@ -78,14 +78,16 @@ Builder.define :c do
     }, true
   end
 
-  def to_ffi_type(type)
+  def to_ffi_type(type, mod = nil)
+    raise ArgumentError, 'type is nil' if type.nil?
+
     if type.is_a?(Symbol)
       type
     elsif @types[type]
       @types[type]
     elsif type.include? ?*
       :pointer
-    elsif (FFI.find_type(type.to_sym) rescue false)
+    elsif ((mod || FFI).find_type(type.to_sym) rescue false)
       type
     else
       raise "type #{type} not supported"

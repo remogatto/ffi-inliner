@@ -37,7 +37,8 @@ class Builder
   attr_reader :code, :compiler
 
   def initialize(code = "")
-    @code = code
+    @code  = code
+    @evals = []
   end
 
   def use_compiler(compiler)
@@ -46,6 +47,10 @@ class Builder
 
   def raw(code)
     @code << code
+  end
+
+  def eval(&block)
+    @evals << block
   end
 
   def to_ffi_type(type)
@@ -65,7 +70,8 @@ class Builder
   end
 
   def build
-    b = builder = self
+    builder = self
+    blocks  = @evals
 
     mod = Module.new
     mod.instance_eval {
@@ -73,8 +79,12 @@ class Builder
 
       ffi_lib builder.shared_object
 
+      blocks.each { |block| instance_eval &block }
+
       builder.signatures.each {|s|
-        attach_function s.name, s.arguments.map { |a| b.to_ffi_type(a) }, b.to_ffi_type(s.return)
+        attach_function s.name, s.arguments.compact.map {|a|
+          builder.to_ffi_type(a, self)
+        }, builder.to_ffi_type(s.return, self)
       }
     }
 

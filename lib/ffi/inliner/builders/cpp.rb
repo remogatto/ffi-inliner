@@ -20,7 +20,7 @@ Builder.define Builder[:c], :cplusplus, :cxx, :cpp, 'c++' do
 
     @signatures << parsed
 
-    raw 'extern "C" {' << code << '}'
+    raw 'extern "C" {' << code << '}' << "\n"
   end
 end
 

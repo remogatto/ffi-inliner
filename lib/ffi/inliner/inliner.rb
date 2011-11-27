@@ -30,7 +30,7 @@ module Inliner
   end
 
   def singleton_inline(*args)
-    language = args.first.is_a?(Symbol) ? args.shift : :c
+    language = (args.first.is_a?(Symbol) || block_given?) ? args.shift : :c
     code     = args.first.is_a?(String) ? args.shift : ''
     options  = args.first.is_a?(Hash)   ? args.shift : {}
 
@@ -44,7 +44,7 @@ module Inliner
   end
 
   def instance_inline(*args)
-    language = args.first.is_a?(Symbol) ? args.shift : :c
+    language = (args.first.is_a?(Symbol) || block_given?) ? args.shift : :c
     code     = args.first.is_a?(String) ? args.shift : ''
     options  = args.first.is_a?(Hash)   ? args.shift : {}
 
