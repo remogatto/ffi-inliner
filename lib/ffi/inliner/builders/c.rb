@@ -81,16 +81,14 @@ Builder.define :c do
   def to_ffi_type(type, mod = nil)
     raise ArgumentError, 'type is nil' if type.nil?
 
-    if type.is_a?(Symbol)
+    if type.is_a?(Symbol) || type.is_a?(FFI::Type) || (type.is_a?(Class) && type.ancestors.include?(FFI::Struct))
       type
     elsif @types[type]
       @types[type]
-    elsif type.include? ?*
+    elsif type.to_s.include? ?*
       :pointer
     elsif ((mod || FFI).find_type(type.to_sym) rescue false)
       type.to_sym
-    elsif type.is_a?(FFI::Type) || type.ancestors.include?(FFI::Struct)
-      type
     else
       raise "type #{type} not supported"
     end
