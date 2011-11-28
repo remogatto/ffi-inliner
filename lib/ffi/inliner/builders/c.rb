@@ -88,10 +88,12 @@ Builder.define :c do
     elsif type.include? ?*
       :pointer
     elsif ((mod || FFI).find_type(type.to_sym) rescue false)
+      type.to_sym
+    elsif type.is_a?(FFI::Type) || type.ancestors.include?(FFI::Struct)
       type
     else
       raise "type #{type} not supported"
-    end.to_sym
+    end
   end
 
   def shared_object
