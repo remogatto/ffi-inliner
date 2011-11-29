@@ -4,14 +4,15 @@ module FFI
 
 module Inliner
   def self.directory
-    # the home dir gets big way too fast imho
-    # @directory ||= File.expand_path(File.join('~', '.ffi-inliner'))
-
-    require 'tmpdir'
-    @directory ||= File.expand_path(File.join(Dir.tmpdir, ".ffi-inliner-#{Process.uid}"))
+    if ENV['FFI_INLINER_PATH'] && !ENV['FFI_INLINER_PATH'].empty?
+      @directory = ENV['FFI_INLINER_PATH']
+    else
+      require 'tmpdir'
+      @directory ||= File.expand_path(File.join(Dir.tmpdir, ".ffi-inliner-#{Process.uid}"))
+    end
 
     if File.exists?(@directory) && !File.directory?(@directory)
-      FileUtils.rm_rf @directory
+      raise 'the FFI_INLINER_PATH exists and is not a directory'
     end
 
     if !File.exists?(@directory)
