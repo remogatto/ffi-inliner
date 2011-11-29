@@ -45,15 +45,18 @@ Builder.define :c do
     whole, path, line = caller.find { |line| line !~ /ffi-inliner/ }.match(/^(.*?):(\d+):in/).to_a
 
     super "\n#line #{line.to_i} #{path.inspect}\n" << code
-  end
-
-  alias c_raw raw
+  end; alias c_raw raw
 
   def include(path, options = {})
     delimiter = (options[:quoted] || options[:local]) ? ['"', '"'] : ['<', '>']
 
     raw "#include #{delimiter.first}#{path}#{delimiter.last}\n", true
   end
+
+  def typedef (from, to)
+    raw "typedef #{from} #{to};"
+  end
+
 
   def function(code, signature = nil)
     parsed = parse_signature(code)
