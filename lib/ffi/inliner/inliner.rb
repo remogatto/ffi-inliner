@@ -31,9 +31,13 @@ module Inliner
   end
 
   def singleton_inline(*args)
-    language = (args.first.is_a?(Symbol) || block_given?) ? args.shift : :c
-    code     = args.first.is_a?(String) ? args.shift : ''
-    options  = args.first.is_a?(Hash)   ? args.shift : {}
+    options = args.last.is_a?(Hash) ? args.pop : {}
+
+    language, code = if args.length == 2
+      args
+    else
+      block_given? ? [args.shift || :c, ''] : [:c, args.shift || '']
+    end
 
     builder = Builder[language].new(code, options)
     yield builder if block_given?
@@ -45,9 +49,13 @@ module Inliner
   end
 
   def instance_inline(*args)
-    language = (args.first.is_a?(Symbol) || block_given?) ? args.shift : :c
-    code     = args.first.is_a?(String) ? args.shift : ''
-    options  = args.first.is_a?(Hash)   ? args.shift : {}
+    options = args.last.is_a?(Hash) ? args.pop : {}
+
+    language, code = if args.length == 2
+      args
+    else
+      block_given? ? [args.shift || :c, ''] : [:c, args.shift || '']
+    end
 
     builder = Builder[language].new(code, options)
     yield builder if block_given?

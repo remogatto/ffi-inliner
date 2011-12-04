@@ -57,7 +57,6 @@ Builder.define :c do
     raw "typedef #{from} #{to};"
   end
 
-
   def function(code, signature = nil)
     parsed = parse_signature(code)
 
