@@ -18,10 +18,10 @@ With ffi-inliner you can run C code within your ruby script.
 
 == SYNOPSIS:
 
-  require 'ffi-inliner'
+  require 'ffi/inliner'
 
   module MyLib
-    extend Inliner
+    extend FFI::Inliner
     inline 'void say_hello(char* name) { printf("Hello, %s\n", name); }'
   end
 
