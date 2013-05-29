@@ -161,7 +161,7 @@ describe 'Inliner' do
     end
   end
   
-  if  Config::CONFIG['target_os'] =~ /mswin|mingw/
+  if  RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
     it "should put library links at the end in mingw" do
       module Foo
 

@@ -1,13 +1,13 @@
 module Inliner
-  DEV_NULL = if Config::CONFIG['target_os'] =~ /mswin|mingw/
+  DEV_NULL = if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
                'nul'
              else
                '/dev/null'
              end
 
-  LIB_EXT = if Config::CONFIG['target_os'] =~ /darwin/
+  LIB_EXT = if RbConfig::CONFIG['target_os'] =~ /darwin/
               '.dylib'
-            elsif Config::CONFIG['target_os'] =~ /mswin|mingw/
+            elsif RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
               '.dll'
             else
               '.so'
@@ -89,7 +89,7 @@ module Inliner
       end
       
       def ldshared
-        if Config::CONFIG['target_os'] =~ /darwin/
+        if RbConfig::CONFIG['target_os'] =~ /darwin/
           'gcc -dynamic -bundle -fPIC'
         else
           'gcc -shared -fPIC'
@@ -97,7 +97,7 @@ module Inliner
       end
       
       def cmd
-        if Config::CONFIG['target_os'] =~ /mswin|mingw/
+        if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
           "sh -c ' #{ldshared} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{libs}' 2>\"#{@fm.log_fn}\""
         else
           "#{ldshared} #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" #{libs} 2>\"#{@fm.log_fn}\""
@@ -108,7 +108,7 @@ module Inliner
     class GPlusPlus < GCC
       
       def ldshared
-        if Config::CONFIG['target_os'] =~ /darwin/
+        if RbConfig::CONFIG['target_os'] =~ /darwin/
           'g++ -dynamic -bundle -fPIC'
         else
           'g++ -shared -fPIC'
@@ -121,7 +121,7 @@ module Inliner
         IO.popen("#{@progname}") { |f| f.gets } ? true : false
       end
       def cmd
-        if Config::CONFIG['target_os'] =~ /mswin|mingw/
+        if RbConfig::CONFIG['target_os'] =~ /mswin|mingw/
           "tcc -rdynamic -shared #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
         else
           "tcc -shared #{libs} -o \"#{@fm.so_fn}\" \"#{@fm.c_fn}\" 2>\"#{@fm.log_fn}\""
